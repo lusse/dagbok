@@ -579,6 +579,26 @@ function Narrator(ch) {
   }
 
   const grouped = {
+    zone(list) {
+      if (list.length === 1) return sentence.zone(list[0]);
+      const Z = list.map(e => em(zoneName(e)));
+      return pick([
+        `Resan gick vidare genom ${listJoin(Z)} – platser ${N} aldrig tidigare sett.`,
+        `${N} färdades långt: för första gången såg ${N} ${listJoin(Z)}.`,
+      ], list[0].time);
+    },
+    boss(list) {
+      if (list.length === 1) return sentence.boss(list[0]);
+      const names = list.map(e => em(bossName(e)));
+      const G = [...new Set(list.flatMap(groupOf))].slice(0, 4).map(nameTag);
+      const who = G.length ? listJoin([N, ...G]) : `${N} och följeslagarna`;
+      if (list.length <= 3) return pick([
+        `En efter en föll de för ${G.length ? who : N}: ${listJoin(names)}.`,
+        `${who} banade väg genom ${listJoin(names)}.`,
+      ], list[0].time);
+      const last = names.pop();
+      return `${who} lämnade en lång rad besegrade fiender bakom sig – ${names.slice(0, 5).join(", ")}${names.length > 5 ? " med flera" : ""} – innan till sist även ${last} föll.`;
+    },
     quest(list) {
       const titles = list.map(questTitle).filter(Boolean).map(t => `»${esc(t)}«`);
       if (list.length === 1) return titles[0] ? `${N} slutförde uppdraget ${titles[0]}.` : `${N} slutförde ett uppdrag.`;
@@ -651,7 +671,7 @@ function Narrator(ch) {
     let paragraph = [];
     let figures = [];
     let lastPeriod = timeOfDay(chapter.first);
-    const buffer = { quest: [], loot: [], death: [], pvp: [] };
+    const buffer = { zone: [], boss: [], quest: [], loot: [], death: [], pvp: [] };
 
     const endParagraph = () => {
       if (paragraph.length) blocks.push({ type: "p", html: paragraph.join(" ") });
@@ -665,7 +685,7 @@ function Narrator(ch) {
       if (paragraph.length >= 4) endParagraph();
     };
     const flush = () => {
-      for (const kind of ["quest", "loot", "pvp", "death"]) {
+      for (const kind of ["zone", "boss", "quest", "loot", "pvp", "death"]) {
         const list = buffer[kind];
         if (!list.length) continue;
         say(grouped[kind](list));
@@ -683,6 +703,7 @@ function Narrator(ch) {
     ], chapter.first + index));
     say(companySentence(chapter));
 
+    let lastZone = firstZone || chapter.entries[0].zone;
     for (const e of chapter.entries) {
       const now = timeOfDay(e.time);
       if (now !== lastPeriod) {
@@ -690,6 +711,19 @@ function Narrator(ch) {
         endParagraph();
         say(TIME_SHIFT[now]);
         lastPeriod = now;
+      }
+      // Byter vi plats utan att det är en ny zon berättar vi vart färden gick
+      if (e.zone && e.zone !== lastZone) {
+        if (e.kind !== "zone" && e.kind !== "dungeon") {
+          flush();
+          endParagraph();
+          say(pick([
+            `Färden gick vidare till ${em(e.zone)}.`,
+            `Snart befann sig ${N} i ${em(e.zone)}.`,
+            `I ${em(e.zone)} väntade nya äventyr.`,
+          ], e.time));
+        }
+        lastZone = e.zone;
       }
       if (buffer[e.kind]) {
         if (e.kind === "loot" && (e.quality ?? 3) < 3) continue;
