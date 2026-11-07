@@ -14,7 +14,9 @@ Dagboken skriver automatiskt ner det som är värt att minnas och tar skärmdump
 - dödsfall, PvP-kills, PvP-dödsfall, dueller, favoritoffer och ärkefiender
 - följeslagare: vilka du grupperar med, hur länge och hur många bossar ni fällt tillsammans
 
-Installera genom att kopiera mappen `Dagbok` till `World of Warcraft\_<version>_\Interface\AddOns\`.
+**Ladda ner addonet:** [Dagbok.zip](https://github.com/lusse/dagbok/releases/latest/download/Dagbok.zip) (bara addonet, utan skripten för hemsidan).
+
+Packa upp och lägg mappen `Dagbok` i `World of Warcraft\_<version>_\Interface\AddOns\`. Starta om spelet helt och skriv `/dagbok`. Skärmdumparna tas automatiskt av spelet och hamnar i `World of Warcraft\_<version>_\Screenshots\`.
 
 | Kommando | |
 |---|---|
