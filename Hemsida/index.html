@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Krönikan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f2e8d5;
+  --bg-deep: #e8dabf;
+  --paper: #fbf6ea;
+  --ink: #2b2118;
+  --ink-soft: #5e4d3b;
+  --ink-faint: #8a7860;
+  --rule: #d4c3a3;
+  --accent: #8a1f1f;
+  --gold: #a07a2c;
+  --shadow: 0 1px 2px rgba(60, 40, 20, .08), 0 8px 24px rgba(60, 40, 20, .08);
+  --q0: #6b6b6b; --q1: #3a3a3a; --q2: #1a7f00; --q3: #0062c4; --q4: #8b2fd0; --q5: #c05e00; --q6: #9a7d3a; --q7: #0089b3;
+  --serif: "EB Garamond", Georgia, "Times New Roman", serif;
+  --display: "Cinzel", "Trajan Pro", Georgia, serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14110d; --bg-deep: #0e0c09; --paper: #1d1913; --ink: #ece1cb; --ink-soft: #c2b298; --ink-faint: #8d7f68;
+    --rule: #3a3226; --accent: #d9574a; --gold: #d4a24c; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --q0: #9d9d9d; --q1: #ffffff; --q2: #1eff00; --q3: #3b9bff; --q4: #b768f5; --q5: #ff8000; --q6: #e6cc80; --q7: #00ccff;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14110d; --bg-deep: #0e0c09; --paper: #1d1913; --ink: #ece1cb; --ink-soft: #c2b298; --ink-faint: #8d7f68;
+  --rule: #3a3226; --accent: #d9574a; --gold: #d4a24c; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  --q0: #9d9d9d; --q1: #ffffff; --q2: #1eff00; --q3: #3b9bff; --q4: #b768f5; --q5: #ff8000; --q6: #e6cc80; --q7: #00ccff;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  background-image: radial-gradient(ellipse at top, transparent 0%, var(--bg-deep) 140%);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 20px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+img { max-width: 100%; display: block; }
+
+/* Omslag */
+.hero {
+  position: relative;
+  min-height: min(62vh, 640px);
+  display: flex;
+  align-items: flex-end;
+  color: #f6eedd;
+  background: #241b12 center / cover no-repeat;
+  overflow: hidden;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 7, 4, .15) 0%, rgba(10, 7, 4, .35) 45%, rgba(10, 7, 4, .88) 100%);
+}
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 48px 24px 44px;
+}
+.hero .eyebrow {
+  font-family: var(--display);
+  letter-spacing: .3em;
+  font-size: 13px;
+  text-transform: uppercase;
+  opacity: .8;
+}
+.hero h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(44px, 9vw, 96px);
+  line-height: 1;
+  margin: 12px 0 10px;
+  letter-spacing: .04em;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, .5);
+}
+.hero .subtitle { font-size: 22px; font-style: italic; opacity: .92; }
+.hero-tools { position: absolute; top: 16px; right: 16px; z-index: 2; display: flex; gap: 8px; }
+.hero-tools select, .hero-tools button {
+  font: 15px var(--serif);
+  color: #f6eedd;
+  background: rgba(20, 14, 8, .55);
+  border: 1px solid rgba(246, 238, 221, .3);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+/* Flikar */
+nav.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+}
+nav.tabs .inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+nav.tabs button {
+  font-family: var(--display);
+  font-size: 14px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 16px 14px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+nav.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+
+main { max-width: 1080px; margin: 0 auto; padding: 32px 16px 96px; }
+.view[hidden] { display: none; }
+
+/* Berättelsen */
+.story { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; }
+.toc { position: sticky; top: 76px; align-self: start; font-size: 16px; max-height: calc(100vh - 100px); overflow: auto; }
+.toc h3 { font-family: var(--display); font-size: 13px; letter-spacing: .2em; color: var(--ink-faint); margin: 0 0 12px; font-weight: 500; }
+.toc ol { list-style: none; padding: 0; margin: 0; border-left: 1px solid var(--rule); }
+.toc a { display: block; padding: 5px 0 5px 14px; text-decoration: none; color: var(--ink-soft); line-height: 1.3; }
+.toc a:hover { color: var(--accent); }
+.toc a small { display: block; color: var(--ink-faint); font-size: 13px; }
+
+.book { max-width: 720px; }
+.chapter { margin: 0 0 72px; scroll-margin-top: 80px; }
+.chapter-head { text-align: center; margin: 0 0 32px; }
+.chapter-number { font-family: var(--display); color: var(--gold); letter-spacing: .3em; font-size: 14px; }
+.chapter h2 { font-family: var(--display); font-weight: 500; font-size: clamp(30px, 5vw, 42px); line-height: 1.15; margin: 6px 0 8px; }
+.chapter-meta { color: var(--ink-faint); font-style: italic; font-size: 17px; }
+.ornament { color: var(--gold); text-align: center; letter-spacing: .6em; margin: 18px 0 0; font-size: 14px; }
+.chapter p { margin: 0 0 1.1em; text-align: justify; hyphens: auto; }
+.chapter .opening::first-letter {
+  font-family: var(--display);
+  float: left;
+  font-size: 4.1em;
+  line-height: .82;
+  padding: 6px 10px 0 0;
+  color: var(--accent);
+}
+blockquote {
+  margin: 1.2em 0 1.4em;
+  padding: 4px 0 4px 22px;
+  border-left: 3px solid var(--gold);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--ink-soft);
+}
+figure { margin: 28px -40px 36px; }
+figure img {
+  width: 100%;
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  cursor: zoom-in;
+  background: var(--bg-deep);
+}
+figcaption { text-align: center; font-size: 16px; font-style: italic; color: var(--ink-faint); margin-top: 10px; padding: 0 40px; }
+.snapshots { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 8px 0 28px; }
+.snapshots img { aspect-ratio: 16 / 9; object-fit: cover; border-radius: 3px; cursor: zoom-in; box-shadow: var(--shadow); }
+.snapshots-label { font-family: var(--display); font-size: 12px; letter-spacing: .2em; color: var(--ink-faint); text-transform: uppercase; }
+.prologue p:first-child::first-letter {
+  font-family: var(--display); float: left; font-size: 4.1em; line-height: .82; padding: 6px 10px 0 0; color: var(--accent);
+}
+.epilogue { border-top: 1px solid var(--rule); padding-top: 40px; }
+
+a.item { text-decoration: none; font-weight: 500; }
+a.item:hover { text-decoration: underline; }
+.q0 { color: var(--q0); } .q1 { color: var(--q1); } .q2 { color: var(--q2); } .q3 { color: var(--q3); }
+.q4 { color: var(--q4); } .q5 { color: var(--q5); } .q6 { color: var(--q6); } .q7 { color: var(--q7); }
+.name { font-variant: small-caps; letter-spacing: .03em; }
+
+/* Tidslinje */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+.filters button, .filters input {
+  font: 16px var(--serif);
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 5px 14px;
+  cursor: pointer;
+}
+.filters input { cursor: text; border-radius: 6px; min-width: 200px; flex: 1; }
+.filters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.day { font-family: var(--display); font-size: 15px; letter-spacing: .15em; color: var(--gold); margin: 32px 0 8px; text-transform: uppercase; }
+.event {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.event time { color: var(--ink-faint); font-size: 16px; font-variant-numeric: tabular-nums; }
+.event .what { line-height: 1.4; }
+.event .where { display: block; color: var(--ink-faint); font-size: 15px; }
+.tag { font-family: var(--display); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); margin-right: 8px; }
+.event img { width: 112px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 3px; cursor: zoom-in; }
+
+/* Galleri */
+.gallery { columns: 3 300px; column-gap: 14px; }
+.gallery figure { margin: 0 0 14px; break-inside: avoid; }
+.gallery figcaption { padding: 0; text-align: left; font-size: 15px; }
+
+/* Statistik */
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.card { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 18px 20px; box-shadow: var(--shadow); }
+.card .label { font-family: var(--display); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-faint); }
+.card .value { font-size: 40px; line-height: 1.15; font-weight: 500; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.card .note { color: var(--ink-faint); font-size: 16px; }
+.card.wide { grid-column: span 2; }
+.card ol { margin: 10px 0 0; padding-left: 22px; font-size: 18px; }
+.bars { margin-top: 12px; display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 110px 1fr 56px; gap: 10px; align-items: center; font-size: 16px; }
+.bar .track { height: 10px; border-radius: 5px; background: var(--bg-deep); overflow: hidden; }
+.bar .fill { height: 100%; border-radius: 5px; background: currentColor; }
+.bar .count { text-align: right; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+.empty { text-align: center; color: var(--ink-faint); font-style: italic; padding: 80px 0; }
+.empty code { font-style: normal; }
+
+dialog.lightbox { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 94vh; }
+dialog.lightbox::backdrop { background: rgba(8, 6, 4, .92); }
+dialog.lightbox img { max-width: 96vw; max-height: 86vh; border-radius: 4px; }
+dialog.lightbox p { color: #e9dfca; text-align: center; font-style: italic; margin: 10px 0 0; }
+
+footer { text-align: center; color: var(--ink-faint); font-size: 15px; padding: 0 16px 40px; }
+
+@media (max-width: 860px) {
+  body { font-size: 19px; }
+  .story { grid-template-columns: 1fr; }
+  .toc { display: none; }
+  figure { margin: 24px 0 30px; }
+  figcaption { padding: 0; }
+  .card.wide { grid-column: auto; }
+  .event { grid-template-columns: 52px 1fr; }
+  .event img { grid-column: 2; width: 100%; max-width: 280px; }
+  .chapter p { text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero" id="hero">
+  <div class="hero-tools">
+    <select id="characterSelect" aria-label="Välj karaktär" hidden></select>
+    <button id="themeToggle" type="button" aria-label="Byt tema">◐</button>
+  </div>
+  <div class="hero-inner">
+    <div class="eyebrow">Krönikan om</div>
+    <h1 id="heroName">…</h1>
+    <div class="subtitle" id="heroSubtitle"></div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Vyer">
+  <div class="inner" role="tablist">
+    <button role="tab" data-view="story" aria-selected="true">Berättelsen</button>
+    <button role="tab" data-view="timeline" aria-selected="false">Tidslinje</button>
+    <button role="tab" data-view="gallery" aria-selected="false">Galleri</button>
+    <button role="tab" data-view="stats" aria-selected="false">Statistik</button>
+  </div>
+</nav>
+
+<main>
+  <section class="view" id="view-story"></section>
+  <section class="view" id="view-timeline" hidden></section>
+  <section class="view" id="view-gallery" hidden></section>
+  <section class="view" id="view-stats" hidden></section>
+</main>
+
+<footer id="footer"></footer>
+
+<dialog class="lightbox" id="lightbox">
+  <img alt="">
+  <p></p>
+</dialog>
+
+<script>const whTooltips = { colorLinks: false, iconizeLinks: true, renameLinks: false };</script>
+<script src="https://wow.zamimg.com/js/tooltips.js" async></script>
+<script src="data.js"></script>
+<script>
+"use strict";
+
+// ---------- Hjälpfunktioner ----------
+
+const DATA = window.DAGBOK || { characters: [] };
+const asArray = x => Array.isArray(x) ? x : (x && typeof x === "object" ? Object.values(x) : []);
+const luaGet = (t, k) => Array.isArray(t) ? t[k - 1] : (t ? t[k] : undefined);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = n => Math.round(n || 0).toLocaleString("sv-SE");
+const times = n => n === 1 ? "en gång" : `${fmt(n)} gånger`;
+const money = copper => copper >= 10000 ? `${fmt(copper / 10000)} guld` : copper >= 100 ? `${fmt(copper / 100)} silver` : `${fmt(copper)} koppar`;
+const $ = sel => document.querySelector(sel);
+
+const storage = {
+  get(key) { try { return localStorage.getItem(key); } catch { return null; } },
+  set(key, value) { try { localStorage.setItem(key, value); } catch { /* privat läge */ } },
+};
+
+const dateOf = t => new Date(t * 1000);
+const longDate = t => dateOf(t).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" });
+const shortDate = t => dateOf(t).toLocaleDateString("sv-SE", { day: "numeric", month: "long" });
+const clock = t => dateOf(t).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+const dayKey = t => dateOf(t).toDateString();
+
+function timeOfDay(t) {
+  const h = dateOf(t).getHours();
+  if (h >= 5 && h < 10) return "morgon";
+  if (h >= 10 && h < 17) return "dag";
+  if (h >= 17 && h < 22) return "kväll";
+  return "natt";
+}
+
+function roman(n) {
+  const map = [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+  let out = "";
+  for (const [v, s] of map) while (n >= v) { out += s; n -= v; }
+  return out;
+}
+
+// Samma händelse får alltid samma formulering, men olika händelser varierar
+function pick(options, seed) {
+  let h = Math.floor(seed) | 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h ^= h >>> 16;
+  return options[Math.abs(h) % options.length];
+}
+
+function listJoin(items) {
+  if (items.length <= 1) return items.join("");
+  return items.slice(0, -1).join(", ") + " och " + items[items.length - 1];
+}
+
+const QUALITY_BY_COLOR = { "9d9d9d": 0, "ffffff": 1, "1eff00": 2, "0070dd": 3, "0070de": 3, "a335ee": 4, "ff8000": 5, "e6cc80": 6, "00ccff": 7 };
+const QUALITY_NAMES = ["Usla", "Vanliga", "Ovanliga", "Sällsynta", "Episka", "Legendariska", "Artefakter", "Arvegods"];
+
+// Gör om WoW:s länkar och färgkoder till HTML
+function wowText(text) {
+  let out = esc(text);
+  out = out.replace(/\|c(?:ff([0-9a-fA-F]{6})|nIQ(\d+):)\|H(item|spell|quest):(\d+)[^|]*\|h\[([^\]]*)\]\|h\|r/g, (m, hex, iq, type, id, label) => {
+    const q = iq != null ? +iq : (QUALITY_BY_COLOR[(hex || "").toLowerCase()] ?? 1);
+    return `<a class="item q${q}" href="https://www.wowhead.com/classic/${type}=${id}" target="_blank" rel="noopener" data-wowhead="${type}=${id}&amp;domain=classic">[${label}]</a>`;
+  });
+  return out.replace(/\|c(?:ff[0-9a-fA-F]{6}|n[A-Za-z0-9_]+:)/g, "").replace(/\|r/g, "");
+}
+
+const plainText = text => String(text ?? "").replace(/\|c(?:ff[0-9a-fA-F]{6}|n[A-Za-z0-9_]+:)/g, "").replace(/\|H[^|]*\|h/g, "").replace(/\|h|\|r/g, "");
+
+function itemLink(e) {
+  const m = /(\|c[^|]*\|H(?:item|spell|quest):[^|]*\|h\[[^\]]*\]\|h\|r)(?: x(\d+))?/.exec(e.link || e.text || "");
+  if (!m) return wowText(e.text || "");
+  return wowText(m[1]) + (m[2] ? ` ×${m[2]}` : "");
+}
+
+// ---------- Karaktären ----------
+
+function prepare(db) {
+  const entries = asArray(db.entries).filter(e => e && e.time).sort((a, b) => a.time - b.time);
+  const c = db.character || {};
+  let name = c.name, cls = c.class, race = c.race;
+  const start = entries.find(e => e.kind === "start");
+  const m = start && /påbörjades\. (.+?), nivå (\d+) (.+?)\./.exec(start.text || "");
+  if (m) { name = name || m[1]; cls = cls || m[3]; }
+  name = name || String(db.folder || "Okänd").split("-")[0];
+  const level = c.level || Math.max(0, ...entries.map(e => e.level || 0));
+  const extras = asArray(db.extraShots).filter(x => x && x.image).sort((a, b) => a.time - b.time);
+  return { db, entries, name, cls, race, realm: c.realm, faction: c.faction, guild: c.guild, level, extras, stats: db.stats || {}, pvp: db.pvp || {} };
+}
+
+const characters = asArray(DATA.characters).map(prepare).filter(c => c.entries.length > 0);
+
+// ---------- Berättaren ----------
+
+function questTitle(e) {
+  if (e.title) return e.title;
+  const m = /uppdraget (.+?)(?: \(uppdrag nr \d+\))?$/.exec(e.text || "");
+  return m ? m[1] : null;
+}
+function pvpVictim(e) {
+  if (e.victim) return e.victim;
+  const name = (/^(?:Dödade|Var med och dödade) (.+?) \(PvP/.exec(e.text || "") || [])[1];
+  return name && name !== "en fientlig spelare" ? name : null;
+}
+const deathKiller = e => e.killer || (/^(?:Föll för|Dödades av) (.+)$/.exec(e.text || "") || [])[1] || null;
+const bossName = e => e.boss || (/^Besegrade (.+?) för första gången/.exec(e.text || "") || [])[1] || "fienden";
+const rareName = e => e.creature || (/sällsynta (.+)$/.exec(e.text || "") || [])[1] || "besten";
+const zoneName = e => e.zone || (/(?:till|in i|i) (.+?) för första gången/.exec(e.text || "") || [])[1] || "okända marker";
+const groupOf = e => asArray(e.group).filter(Boolean);
+const shortName = n => String(n).split("-")[0];
+const nameTag = n => `<span class="name">${esc(shortName(n))}</span>`;
+
+function duration(seconds) {
+  const h = seconds / 3600;
+  if (h < 1) return `${Math.max(1, Math.round(seconds / 60))} minuter`;
+  if (h < 1.5) return "en timme";
+  return `${h < 10 ? Math.round(h * 2) / 2 : Math.round(h)} timmar`.replace(".", ",");
+}
+
+// Följeslagare sorterade efter tid tillsammans
+function companionsOf(ch) {
+  return Object.entries(ch.db.companions || {})
+    .map(([name, c]) => ({ name, ...c, seconds: c.seconds || 0, groups: c.groups || 0, bosses: c.bosses || 0 }))
+    .sort((a, b) => b.seconds - a.seconds);
+}
+
+function Narrator(ch) {
+  const N = `<span class="name">${esc(ch.name)}</span>`;
+  const Ns = `<span class="name">${esc(ch.name)}s</span>`;
+  const em = s => `<em>${esc(s)}</em>`;
+
+  const sentence = {
+    level(e) {
+      const L = e.level;
+      if (L % 10 === 0) return pick([
+        `Ett stort ögonblick: ${N} nådde nivå ${L}.`,
+        `Nivå ${L}! En milstolpe på ${Ns} resa – och ett minne värt att bevara.`,
+        `Med nivå ${L} lade ${N} ännu ett tiotal bakom sig.`,
+      ], e.time);
+      if (/maxnivå/.test(e.text || "")) return `${N} nådde den högsta nivån, ${L}. Klättringen var över – men äventyren hade bara börjat.`;
+      return pick([
+        `${N} växte i styrka och nådde nivå ${L}.`,
+        `Erfarenheten bar frukt – nivå ${L} var nådd.`,
+        `Ännu en nivå föll på plats: ${L}.`,
+        `${N} kände kraften växa. Nivå ${L}.`,
+      ], e.time);
+    },
+    zone(e) {
+      const Z = em(zoneName(e));
+      return pick([
+        `Vägen ledde vidare till ${Z}, ett land ${N} aldrig tidigare satt sin fot i.`,
+        `För första gången blickade ${N} ut över ${Z}.`,
+        `${N} tog sig in i ${Z} – nya marker, nya faror.`,
+      ], e.time);
+    },
+    dungeon(e) {
+      const Z = em(zoneName(e));
+      const G = groupOf(e).map(nameTag);
+      if (e.instanceType === "raid") return `Tillsammans med en hel armé av följeslagare${G.length ? `, däribland ${listJoin(G)},` : ""} trädde ${N} in i ${Z}.`;
+      if (G.length) return pick([
+        `Med ${listJoin(G)} vid sin sida steg ${N} in i ${Z}.`,
+        `${N} och ${listJoin(G)} samlade mod och gick in i ${Z}.`,
+      ], e.time);
+      return pick([
+        `Med vapnen i högsta hugg steg ${N} in i ${Z}.`,
+        `Porten till ${Z} öppnades, och ${N} gick in i mörkret.`,
+      ], e.time);
+    },
+    battleground(e) {
+      return `${N} kastade sig för första gången in i striden om ${em(zoneName(e))}.`;
+    },
+    boss(e) {
+      const B = em(bossName(e));
+      const diff = e.difficulty ? ` (${esc(e.difficulty)})` : "";
+      const G = groupOf(e).map(nameTag);
+      if (G.length) return pick([
+        `I djupet väntade ${B} – men ${listJoin([N, ...G])} gick segrande ur striden${diff}.`,
+        `Sida vid sida med ${listJoin(G)} fällde ${N} ${B}${diff}.`,
+      ], e.time);
+      return pick([
+        `I djupet väntade ${B} – men ${N} och följeslagarna gick segrande ur striden${diff}.`,
+        `${B} föll${diff}. Första gången ${N} besegrade den fienden, men knappast den sista.`,
+      ], e.time);
+    },
+    rare(e) {
+      const X = em(rareName(e));
+      return pick([
+        `En sällsynt best, ${X}, korsade ${Ns} väg. Den överlevde inte mötet.`,
+        `Ryktet om ${X} hade gått länge – nu var den fälld av ${Ns} hand.`,
+      ], e.time);
+    },
+    achievement(e) {
+      const A = esc(e.achievement || (e.text || "").replace(/^Bedrift: /, ""));
+      return pick([`Bedriften »${A}« skrevs in i krönikan.`, `${N} förtjänade bedriften »${A}«.`], e.time);
+    },
+    gold(e) {
+      const G = (/(\d[\d ]*) guld/.exec(e.text || "") || [])[1] || "";
+      return pick([
+        `Pungen blev allt tyngre – för första gången bar ${N} ${G} guld.`,
+        `${G} guld! Aldrig tidigare hade ${N} varit så förmögen.`,
+      ], e.time);
+    },
+    guild(e) {
+      const G = esc(e.guild || (/<(.+)>/.exec(e.text || "") || [])[1] || "");
+      if (/^Lämnade/.test(e.text || "")) return `${N} lämnade guilden &lt;${G}&gt; och gick sin egen väg.`;
+      return `${N} svor trohet till guilden &lt;${G}&gt;. Nya vänner, nya äventyr.`;
+    },
+    reputation(e) {
+      const m = /^Blev (.+) hos (.+)$/.exec(e.text || "") || [];
+      return pick([
+        `Ryktet växte: ${N} blev ${em(m[1] || "")} hos ${esc(m[2] || "")}.`,
+        `Hos ${esc(m[2] || "")} talade man nu gott om ${N} – ${em(m[1] || "")}.`,
+      ], e.time);
+    },
+    profession(e) {
+      if (/^Lärde sig/.test(e.text || "")) return `${N} började lära sig ${em(e.skill || (e.text || "").replace(/^Lärde sig /, ""))}.`;
+      return `I hantverket nådde ${N} ${e.rank || ""} i ${em(e.skill || "")}.`;
+    },
+    mount() {
+      return `Och så – för första gången – red ${N} på ett eget riddjur. Vägarna kändes plötsligt kortare.`;
+    },
+    duel(e) {
+      const O = `<span class="name">${esc(e.opponent || "")}</span>`;
+      if (e.won || /^Vann/.test(e.text || "")) return pick([`${N} utmanade ${O} på duell och vann.`, `Duellen mot ${O} slutade till ${Ns} fördel.`], e.time);
+      return pick([`${O} vann duellen mot ${N} – den här gången.`, `${N} fick ge sig i duellen mot ${O}.`], e.time);
+    },
+    companion(e) {
+      const C = nameTag(e.companion || "");
+      const H = e.hours || +((/^(\d+)/.exec(e.text || "") || [])[1]) || 1;
+      if (H === 1) return pick([
+        `Mellan ${N} och ${C} började något som liknade vänskap – en hel timme hade de nu färdats tillsammans.`,
+        `${C} hade blivit ett välbekant ansikte; en timme hade de nu delat vägen.`,
+      ], e.time);
+      if (H >= 50) return `${H} timmar tillsammans. ${C} var inte längre en följeslagare – utan en vapenbroder.`;
+      return pick([
+        `Vänskapen med ${C} växte sig starkare: ${H} timmar hade de nu äventyrat sida vid sida.`,
+        `${N} och ${C} hade nu ${H} timmar av gemensamma äventyr bakom sig.`,
+        `Ännu en milstolpe i vänskapen – ${H} timmar med ${C}.`,
+      ], e.time);
+    },
+    pvpdeath(e) {
+      const K = deathKiller(e);
+      if (!K) return `${N} stupade i striden mot den andra sidan.`;
+      return pick([
+        `${`<span class="name">${esc(K)}</span>`} från fiendesidan fällde ${N}.`,
+        `Ett bakhåll: ${`<span class="name">${esc(K)}</span>`} tog ${Ns} liv.`,
+      ], e.time);
+    },
+    memory(e) {
+      return null;
+    },
+  };
+
+  function deathSentence(e) {
+    const env = {
+      Falling: `${N} tog ett steg för mycket och föll till sin död.`,
+      Drowning: `${N} stannade för länge under ytan och drunknade.`,
+      Fatigue: `${N} simmade för långt ut och gick under av utmattning.`,
+      Fire: `Lågorna tog ${N}.`,
+      Lava: `${N} föll i lavan. Det gick inte bra.`,
+      Slime: `${N} gick under i giftigt slem.`,
+    }[e.environment];
+    if (env) return env;
+    const K = deathKiller(e);
+    if (!K) return `${N} dog.`;
+    return pick([
+      `${em(K)} visade sig vara för svår – ${N} föll.`,
+      `Ödet var grymt: ${em(K)} fällde ${N}.`,
+      `${N} dukade under mot ${em(K)}.`,
+    ], e.time);
+  }
+
+  const grouped = {
+    quest(list) {
+      const titles = list.map(questTitle).filter(Boolean).map(t => `»${esc(t)}«`);
+      if (list.length === 1) return titles[0] ? `${N} slutförde uppdraget ${titles[0]}.` : `${N} slutförde ett uppdrag.`;
+      if (list.length <= 3 && titles.length === list.length) return `${N} slutförde uppdragen ${listJoin(titles)}.`;
+      const some = titles.slice(0, 3);
+      return `${N} slutförde ${list.length} uppdrag` + (some.length ? `, bland annat ${listJoin(some)}.` : ".");
+    },
+    loot(list) {
+      const items = list.map(itemLink);
+      if (list.length === 1) return pick([`Bland bytet glimmade ${items[0]}.`, `${N} lade vantarna på ${items[0]}.`], list[0].time);
+      if (list.length <= 4) return `Bytet var gott: ${listJoin(items)}.`;
+      return `Bytet var rikt – ${list.length} fynd värda att nämna, bland dem ${listJoin(items.slice(0, 3))}.`;
+    },
+    death(list) {
+      if (list.length === 1) return deathSentence(list[0]);
+      const killers = [...new Set(list.map(deathKiller).filter(Boolean))].slice(0, 2).map(em);
+      return `Det var inte ${Ns} lyckligaste stund: ${list.length} gånger föll ${N}` + (killers.length ? `, bland annat för ${listJoin(killers)}.` : ".");
+    },
+    pvp(list) {
+      const victims = [...new Set(list.map(pvpVictim).filter(Boolean))].map(v => `<span class="name">${esc(v)}</span>`);
+      if (list.length === 1) {
+        if (!victims.length) return pick([`En fiende från den andra fraktionen föll för ${Ns} hand.`, `${N} mötte en fiende från andra sidan – och vann.`], list[0].time);
+        return pick([`${N} mötte ${victims[0]} i strid och gick segrande ur den.`, `${victims[0]} från fiendesidan fick bita i gräset.`], list[0].time);
+      }
+      return `${list.length} fiender från den andra sidan föll för ${Ns} hand` + (victims.length ? `, däribland ${listJoin(victims.slice(0, 3))}.` : ".");
+    },
+  };
+
+  const TIME_SHIFT = { morgon: "Morgonen grydde.", dag: "Dagen led.", kväll: "Kvällen föll över landet.", natt: "Natten sänkte sig." };
+  const TIME_WORD = { morgon: "morgon", dag: "dag", kväll: "kväll", natt: "natt" };
+  const TIME_PHRASE = { morgon: "tidig morgon", dag: "mitt på dagen", kväll: "kväll", natt: "sent på natten" };
+
+  const companions = ch.db.companions || {};
+
+  // Vilka som följde med under kapitlet; välkända namnges, tillfälliga sällskap klumpas ihop
+  function companySentence(chapter) {
+    const counts = {};
+    for (const e of chapter.entries) for (const n of groupOf(e)) counts[n] = (counts[n] || 0) + 1;
+    const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    if (!names.length) return null;
+    const isKnown = n => counts[n] >= 3 || (companions[n]?.seconds || 0) >= 1800 || (companions[n]?.groups || 0) >= 2;
+    const known = names.filter(isKnown).slice(0, 4);
+    const strangers = names.length - known.length;
+    const seed = chapter.first;
+    if (!known.length) return pick([
+      `${N} färdades en tid i sällskap med ${strangers === 1 ? "en främling" : "några främlingar"}.`,
+      `På vägen slog ${N} följe med ${strangers === 1 ? "en tillfällig vapendragare" : "några tillfälliga vapendragare"}.`,
+    ], seed);
+    const K = listJoin(known.map(nameTag));
+    const extra = strangers ? `, och ${strangers === 1 ? "en främling" : "några främlingar"} anslöt en stund` : "";
+    const veteran = known.find(n => (companions[n]?.seconds || 0) >= 10 * 3600);
+    if (veteran && known.length === 1) return pick([
+      `Som så ofta förr var ${nameTag(veteran)} vid ${Ns} sida${extra}.`,
+      `Den trogna ${nameTag(veteran)} följde med, som alltid${extra}.`,
+    ], seed);
+    return pick([
+      `Vid ${Ns} sida stod ${K}${extra}.`,
+      `${N} var inte ensam: ${K} följde med${extra}.`,
+      `Sällskapet bestod av ${K}${extra}.`,
+    ], seed);
+  }
+
+  function figureFor(e, caption) {
+    return { type: "figure", image: e.image, caption: caption || plainText(e.text), time: e.time };
+  }
+
+  // Bygger kapitlets stycken av händelserna
+  function tell(chapter, index) {
+    const blocks = [];
+    let paragraph = [];
+    let figures = [];
+    let lastPeriod = timeOfDay(chapter.first);
+    const buffer = { quest: [], loot: [], death: [], pvp: [] };
+
+    const endParagraph = () => {
+      if (paragraph.length) blocks.push({ type: "p", html: paragraph.join(" ") });
+      paragraph = [];
+      blocks.push(...figures);
+      figures = [];
+    };
+    const say = html => {
+      if (!html) return;
+      paragraph.push(html);
+      if (paragraph.length >= 4) endParagraph();
+    };
+    const flush = () => {
+      for (const kind of ["quest", "loot", "pvp", "death"]) {
+        const list = buffer[kind];
+        if (!list.length) continue;
+        say(grouped[kind](list));
+        for (const e of list) if (e.image) figures.push(figureFor(e));
+        buffer[kind] = [];
+      }
+    };
+
+    // Börjar kapitlet med en ny zon berättar zonmeningen själv var vi är
+    const firstZone = chapter.entries[0].kind === "zone" ? null : chapter.entries.find(e => e.zone)?.zone;
+    const period = timeOfDay(chapter.first);
+    say(pick([
+      `Det var ${TIME_PHRASE[period]} den ${shortDate(chapter.first)}` + (firstZone ? ` när ${N} befann sig i ${em(firstZone)}.` : ` när ${Ns} äventyr fortsatte.`),
+      (firstZone ? `${em(firstZone)} ` : "Världen ") + `låg framför ${N} denna ${TIME_WORD[period]} den ${shortDate(chapter.first)}.`,
+    ], chapter.first + index));
+    say(companySentence(chapter));
+
+    for (const e of chapter.entries) {
+      const now = timeOfDay(e.time);
+      if (now !== lastPeriod) {
+        flush();
+        endParagraph();
+        say(TIME_SHIFT[now]);
+        lastPeriod = now;
+      }
+      if (buffer[e.kind]) {
+        if (e.kind === "loot" && (e.quality ?? 3) < 3) continue;
+        buffer[e.kind].push(e);
+        continue;
+      }
+      flush();
+      if (e.kind === "zone" || e.kind === "dungeon") endParagraph();
+      if (e.kind === "memory") {
+        endParagraph();
+        blocks.push({ type: "p", html: pick([`${N} stannade upp och skrev i dagboken:`, `I dagboken skrev ${N}:`], e.time) });
+        blocks.push({ type: "quote", html: esc(e.note || e.text) });
+        if (e.image) blocks.push(figureFor(e, "Ett eget minne"));
+        continue;
+      }
+      if (e.kind === "death") { buffer.death.push(e); continue; }
+      const make = sentence[e.kind];
+      say(make ? make(e) : esc(plainText(e.text)) + ".");
+      if (e.image) figures.push(figureFor(e));
+    }
+    flush();
+
+    const levels = chapter.entries.map(e => e.level).filter(Boolean);
+    const fromLevel = Math.min(...levels), toLevel = Math.max(...levels);
+    const levelUps = chapter.entries.filter(e => e.kind === "level").length;
+    if (levelUps >= 2) say(`När ${TIME_WORD[timeOfDay(chapter.last)]}en var slut hade ${N} gått från nivå ${toLevel - levelUps} till ${toLevel}.`);
+    endParagraph();
+    return { blocks, fromLevel, toLevel };
+  }
+
+  return { tell, N, Ns };
+}
+
+function buildChapters(ch) {
+  const chapters = [];
+  let current = null;
+  for (const e of ch.entries) {
+    if (e.kind === "start") continue;
+    if (!current || e.time - current.last > 3 * 3600) {
+      current = { entries: [], first: e.time, last: e.time, extras: [] };
+      chapters.push(current);
+    }
+    current.entries.push(e);
+    current.last = e.time;
+  }
+  for (const x of ch.extras) {
+    let best = null, bestDistance = Infinity;
+    for (const c of chapters) {
+      const d = x.time < c.first ? c.first - x.time : x.time > c.last ? x.time - c.last : 0;
+      if (d < bestDistance) { best = c; bestDistance = d; }
+    }
+    if (best) best.extras.push(x);
+  }
+  return chapters;
+}
+
+function chapterTitle(chapter) {
+  const dungeon = chapter.entries.find(e => e.kind === "dungeon");
+  if (dungeon) return zoneName(dungeon);
+  if (chapter.entries.some(e => e.kind === "level" && /maxnivå/.test(e.text || ""))) return "Toppen";
+  const counts = {};
+  for (const e of chapter.entries) if (e.zone) counts[e.zone] = (counts[e.zone] || 0) + 1;
+  const zones = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (!zones.length) return "Ett nytt kapitel";
+  if (zones.length > 1 && zones[1][1] >= zones[0][1] * .6) return `${zones[0][0]} och ${zones[1][0]}`;
+  return zones[0][0];
+}
+
+function describeCharacter(ch) {
+  const parts = [ch.race, ch.cls].filter(Boolean).join(" ");
+  return parts || "äventyrare";
+}
+
+// ---------- Vyer ----------
+
+function renderHero(ch) {
+  document.title = `Krönikan om ${ch.name}`;
+  $("#heroName").textContent = ch.name;
+  const bits = [`Nivå ${ch.level}`, describeCharacter(ch)];
+  if (ch.guild) bits.push(`<${ch.guild}>`);
+  if (ch.realm) bits.push(ch.realm);
+  $("#heroSubtitle").textContent = bits.join(" · ");
+  const images = [...ch.entries.filter(e => e.image), ...ch.extras];
+  const cover = images.sort((a, b) => b.time - a.time)[0];
+  $("#hero").style.backgroundImage = cover ? `url("${cover.image}")` : "";
+}
+
+function renderStory(ch) {
+  const view = $("#view-story");
+  const narrator = Narrator(ch);
+  const { N, Ns } = narrator;
+  const chapters = buildChapters(ch);
+  const start = ch.entries.find(e => e.kind === "start") || ch.entries[0];
+  const firstZone = ch.entries.find(e => e.zone)?.zone;
+  const startLevel = start.level || ch.entries.find(e => e.level)?.level;
+
+  let html = `<div class="story"><aside class="toc"><h3>INNEHÅLL</h3><ol>`;
+  html += `<li><a href="#prolog">Prolog</a></li>`;
+  chapters.forEach((c, i) => {
+    html += `<li><a href="#kapitel-${i + 1}">${roman(i + 1)}. ${esc(chapterTitle(c))}<small>${shortDate(c.first)}</small></a></li>`;
+  });
+  html += `<li><a href="#hittills">Hittills</a></li></ol></aside><div class="book">`;
+
+  html += `<article class="chapter prologue" id="prolog"><div class="chapter-head"><div class="chapter-number">PROLOG</div><h2>Där allt började</h2></div>`;
+  html += `<p>Det här är krönikan om ${N}, en ${esc(describeCharacter(ch))}${ch.realm ? ` från ${esc(ch.realm)}` : ""}${ch.faction ? `, i ${ch.faction === "Horde" ? "Hordens" : ch.faction === "Alliance" ? "Alliansens" : esc(ch.faction)} tjänst` : ""}. `;
+  html += `Dagboken öppnades för första gången den ${longDate(start.time)}. ${N} hade då redan nått nivå ${startLevel || "?"}`;
+  html += firstZone ? ` och vandrade genom ${`<em>${esc(firstZone)}</em>`}.` : ".";
+  html += ` Allt som hänt sedan dess finns nedtecknat här.</p></article>`;
+
+  chapters.forEach((chapter, i) => {
+    const story = narrator.tell(chapter, i);
+    const levelText = story.fromLevel === story.toLevel ? `nivå ${story.toLevel}` : `nivå ${story.fromLevel}–${story.toLevel}`;
+    html += `<article class="chapter" id="kapitel-${i + 1}"><div class="chapter-head">`;
+    html += `<div class="chapter-number">KAPITEL ${roman(i + 1)}</div><h2>${esc(chapterTitle(chapter))}</h2>`;
+    html += `<div class="chapter-meta">${longDate(chapter.first)} · ${levelText}</div><div class="ornament">◆ ◆ ◆</div></div>`;
+    let first = true;
+    for (const b of story.blocks) {
+      if (b.type === "p") { html += `<p${first ? ' class="opening"' : ""}>${b.html}</p>`; first = false; }
+      else if (b.type === "quote") html += `<blockquote>${b.html}</blockquote>`;
+      else if (b.type === "figure") html += `<figure><img src="${esc(b.image)}" alt="${esc(b.caption)}" loading="lazy" data-caption="${esc(b.caption)}"><figcaption>${esc(b.caption)}</figcaption></figure>`;
+    }
+    if (chapter.extras.length) {
+      html += `<div class="snapshots-label">Ögonblicksbilder</div><div class="snapshots">`;
+      for (const x of chapter.extras) html += `<img src="${esc(x.image)}" alt="Ögonblicksbild ${clock(x.time)}" loading="lazy" data-caption="${esc(shortDate(x.time) + " " + clock(x.time))}">`;
+      html += `</div>`;
+    }
+    html += `</article>`;
+  });
+
+  html += renderEpilogue(ch, N, Ns);
+  html += `</div></div>`;
+  view.innerHTML = html;
+}
+
+function topEntry(table) {
+  return Object.entries(table || {}).sort((a, b) => b[1] - a[1])[0];
+}
+
+function renderEpilogue(ch, N, Ns) {
+  const s = ch.stats, pvp = ch.pvp;
+  const sentences = [];
+  const facts = [];
+  if (s.quests) facts.push(`slutfört ${fmt(s.quests)} uppdrag`);
+  if (s.npcKills) facts.push(`fällt ${fmt(s.npcKills)} fiender`);
+  if (s.items) facts.push(`plockat upp ${fmt(s.items)} föremål`);
+  if (facts.length) sentences.push(`Sedan dagboken öppnades har ${N} ${listJoin(facts)}.`);
+  const creature = topEntry(ch.db.creatures);
+  if (creature) sentences.push(`Ingen fiende har fått lida mer än <em>${esc(creature[0])}</em> – ${fmt(creature[1])} av dem har fallit.`);
+  if (s.bestLink) sentences.push(`Det värdefullaste fyndet hittills är ${wowText(s.bestLink)}.`);
+  if (s.deaths) sentences.push(pick([`Vägen har inte varit utan smärta: ${N} har dött ${times(s.deaths)}.`, `${s.deaths === 1 ? "En gång" : fmt(s.deaths) + " gånger"} har ${N} fått resa sig från de döda.`], s.deaths));
+  if (pvp.kills) {
+    let line = pvp.kills === 1
+      ? `I kampen mot den andra sidan har en fiende fallit för ${Ns} hand`
+      : `I kampen mot den andra sidan har ${fmt(pvp.kills)} fiender fallit för ${Ns} hand`;
+    line += pvp.deaths ? `, medan ${N} själv stupat ${pvp.deaths === 1 ? "en gång" : fmt(pvp.deaths) + " gånger"}.` : ".";
+    sentences.push(line);
+    const nemesis = topEntry(pvp.nemeses);
+    if (nemesis) sentences.push(`Ärkefienden heter <span class="name">${esc(nemesis[0])}</span>, som fällt ${N} ${times(nemesis[1])}. Hämnden väntar.`);
+  }
+  const friends = companionsOf(ch).filter(c => c.seconds >= 1800);
+  if (friends.length) {
+    const best = friends[0];
+    let line = `Trognast av alla följeslagare är ${nameTag(best.name)}${best.class ? `, ${esc(best.class.toLowerCase())}` : ""}, som delat ${duration(best.seconds)} på vägarna med ${N}`;
+    line += best.bosses ? ` och stått bredvid när ${best.bosses === 1 ? "en boss" : fmt(best.bosses) + " bossar"} föll.` : ".";
+    sentences.push(line);
+    const others = friends.slice(1, 4).map(c => nameTag(c.name));
+    if (others.length) sentences.push(`Även ${listJoin(others)} har ofta synts vid ${Ns} sida.`);
+  }
+  sentences.push(`Berättelsen fortsätter…`);
+  return `<article class="chapter epilogue" id="hittills"><div class="chapter-head"><div class="chapter-number">HITTILLS</div><h2>Resan så här långt</h2></div><p class="opening">${sentences.join(" ")}</p></article>`;
+}
+
+const KIND_LABELS = {
+  start: "Början", level: "Nivå", loot: "Loot", boss: "Boss", rare: "Sällsynt", achievement: "Bedrift", zone: "Ny plats",
+  dungeon: "Dungeon", battleground: "Slagfält", quest: "Uppdrag", death: "Död", pvp: "PvP", pvpdeath: "PvP", gold: "Guld",
+  guild: "Guild", reputation: "Rykte", profession: "Yrke", mount: "Riddjur", duel: "Duell", memory: "Minne", companion: "Vänskap",
+};
+const FILTERS = [
+  { label: "Allt", exclude: ["quest"] },
+  { label: "Framsteg", kinds: ["level", "profession", "reputation", "gold", "guild", "mount"] },
+  { label: "Loot", kinds: ["loot"] },
+  { label: "Resan", kinds: ["zone", "dungeon", "battleground", "quest"] },
+  { label: "Strid", kinds: ["boss", "rare", "achievement", "death", "duel"] },
+  { label: "PvP", kinds: ["pvp", "pvpdeath"] },
+  { label: "Sällskap", kinds: ["companion"], withGroup: true },
+  { label: "Minnen", kinds: ["memory", "start"] },
+];
+let timelineFilter = FILTERS[0];
+let timelineSearch = "";
+
+function renderTimeline(ch) {
+  const view = $("#view-timeline");
+  let html = `<div class="filters">`;
+  FILTERS.forEach((f, i) => { html += `<button type="button" data-filter="${i}" aria-pressed="${f === timelineFilter}">${f.label}</button>`; });
+  html += `<input type="search" id="timelineSearch" placeholder="Sök…" value="${esc(timelineSearch)}"></div><div id="timelineList"></div>`;
+  view.innerHTML = html;
+  view.querySelectorAll("[data-filter]").forEach(b => b.addEventListener("click", () => {
+    timelineFilter = FILTERS[+b.dataset.filter];
+    renderTimeline(ch);
+  }));
+  $("#timelineSearch").addEventListener("input", ev => { timelineSearch = ev.target.value; renderTimelineList(ch); });
+  renderTimelineList(ch);
+}
+
+function renderTimelineList(ch) {
+  const q = timelineSearch.trim().toLowerCase();
+  const list = ch.entries.filter(e => {
+    const together = timelineFilter.withGroup && groupOf(e).length && e.kind !== "quest";
+    if (timelineFilter.kinds && !timelineFilter.kinds.includes(e.kind) && !together) return false;
+    if (timelineFilter.exclude && timelineFilter.exclude.includes(e.kind)) return false;
+    if (q && !(plainText(e.text) + " " + (e.zone || "") + " " + groupOf(e).join(" ")).toLowerCase().includes(q)) return false;
+    return true;
+  }).reverse();
+
+  let html = "", lastDay = null;
+  for (const e of list) {
+    const day = dayKey(e.time);
+    if (day !== lastDay) { html += `<div class="day">${longDate(e.time)}</div>`; lastDay = day; }
+    const where = [e.zone, e.subzone].filter(Boolean).join(", ");
+    html += `<div class="event"><time>${clock(e.time)}</time><div class="what"><span class="tag">${KIND_LABELS[e.kind] || e.kind}</span>${wowText(e.text)}`;
+    const company = groupOf(e).map(shortName);
+    html += `<span class="where">${e.level ? `Nivå ${e.level}` : ""}${where ? ` · ${esc(where)}` : ""}${company.length ? ` · med ${esc(listJoin(company))}` : ""}</span></div>`;
+    html += e.image ? `<img src="${esc(e.image)}" alt="" loading="lazy" data-caption="${esc(plainText(e.text))}">` : `<span></span>`;
+    html += `</div>`;
+  }
+  $("#timelineList").innerHTML = html || `<p class="empty">Inga händelser här än.</p>`;
+  refreshTooltips();
+}
+
+function renderGallery(ch) {
+  const images = [
+    ...ch.entries.filter(e => e.image).map(e => ({ time: e.time, image: e.image, caption: plainText(e.text) })),
+    ...ch.extras.map(x => ({ time: x.time, image: x.image, caption: "Ögonblicksbild" })),
+  ].sort((a, b) => b.time - a.time);
+  if (!images.length) {
+    $("#view-gallery").innerHTML = `<p class="empty">Inga bilder än. De dyker upp här när dagboken tagit sina första skärmdumpar.</p>`;
+    return;
+  }
+  $("#view-gallery").innerHTML = `<div class="gallery">` + images.map(i =>
+    `<figure><img src="${esc(i.image)}" alt="${esc(i.caption)}" loading="lazy" data-caption="${esc(i.caption)}"><figcaption>${esc(i.caption)} · ${shortDate(i.time)}</figcaption></figure>`
+  ).join("") + `</div>`;
+}
+
+function renderStats(ch) {
+  const s = ch.stats, pvp = ch.pvp;
+  const card = (label, value, note, cls = "") => `<div class="card ${cls}"><div class="label">${label}</div><div class="value">${value}</div>${note ? `<div class="note">${note}</div>` : ""}</div>`;
+  const zones = Object.keys(ch.db.zones || {}).length || new Set(ch.entries.map(e => e.zone).filter(Boolean)).size;
+  const gold = (s.maxMoney || 0) / 10000;
+
+  let html = `<div class="stats">`;
+  html += card("Nivå", ch.level, describeCharacter(ch));
+  html += card("Uppdrag", fmt(s.quests), "slutförda");
+  html += card("Fiender fällda", fmt(s.npcKills), "med egen dödsstöt");
+  html += card("Dödsfall", fmt(s.deaths), "");
+  html += card("Platser", fmt(zones), "upptäckta zoner");
+  html += card("Bossar", fmt(s.bossKills), "besegrade");
+  html += card("Guldrekord", fmt(gold), "guld på fickan som mest");
+  html += card("Föremål", fmt(s.items), `försäljningsvärde ${money(s.vendorValue || 0)}`);
+  html += card("PvP", `${fmt(pvp.kills)} / ${fmt(pvp.deaths)}`, "kills / dödsfall");
+  if (s.duelsWon || s.duelsLost) html += card("Dueller", `${fmt(s.duelsWon)} / ${fmt(s.duelsLost)}`, "vunna / förlorade");
+
+  const byQuality = s.byQuality || {};
+  const qualities = [0, 1, 2, 3, 4, 5, 6, 7].map(q => [q, luaGet(byQuality, q) || 0]).filter(([, n]) => n > 0);
+  if (qualities.length) {
+    const max = Math.max(...qualities.map(([, n]) => n));
+    html += `<div class="card wide"><div class="label">Loot efter kvalitet</div><div class="bars">`;
+    for (const [q, n] of qualities) {
+      html += `<div class="bar q${q}"><span>${QUALITY_NAMES[q]}</span><span class="track"><span class="fill" style="width:${(n / max * 100).toFixed(1)}%"></span></span><span class="count">${fmt(n)}</span></div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  const topList = (label, table, unit) => {
+    const rows = Object.entries(table || {}).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (!rows.length) return "";
+    return `<div class="card"><div class="label">${label}</div><ol>${rows.map(([n, c]) => `<li>${esc(n)} <span class="note">(${fmt(c)} ${unit})</span></li>`).join("")}</ol></div>`;
+  };
+  const friends = companionsOf(ch).filter(c => c.seconds >= 600).slice(0, 8);
+  if (friends.length) {
+    html += `<div class="card wide"><div class="label">Följeslagare</div><ol class="friends">`;
+    for (const c of friends) {
+      const who = [c.level ? `nivå ${c.level}` : "", c.class || ""].filter(Boolean).join(" ");
+      const facts = [duration(c.seconds) + " tillsammans", c.groups ? `${times(c.groups)} i grupp` : "", c.bosses ? `${fmt(c.bosses)} ${c.bosses === 1 ? "boss" : "bossar"}` : ""].filter(Boolean);
+      html += `<li><span class="name">${esc(shortName(c.name))}</span>${who ? ` <span class="note">${esc(who)}</span>` : ""}<div class="note">${facts.join(" · ")}${c.first ? ` · först ${shortDate(c.first)}` : ""}</div></li>`;
+    }
+    html += `</ol></div>`;
+  }
+  html += topList("Mest fällda fiender", ch.db.creatures, "st");
+  html += topList("Favoritoffer", pvp.victims, "ggr");
+  html += topList("Ärkefiender", pvp.nemeses, "ggr");
+  if (s.bestLink) html += `<div class="card wide"><div class="label">Värdefullaste fyndet</div><div class="value" style="font-size:26px">${wowText(s.bestLink)}</div><div class="note">${money(s.bestValue || 0)} hos handlaren</div></div>`;
+  html += `</div>`;
+  $("#view-stats").innerHTML = html;
+}
+
+function refreshTooltips() {
+  if (window.$WowheadPower && window.$WowheadPower.refreshLinks) {
+    try { window.$WowheadPower.refreshLinks(); } catch { /* tooltips är inte kritiska */ }
+  }
+}
+
+// ---------- Uppstart ----------
+
+function showCharacter(index) {
+  const ch = characters[index];
+  storage.set("dagbok-karaktar", ch.db.folder || ch.name);
+  renderHero(ch);
+  renderStory(ch);
+  renderTimeline(ch);
+  renderGallery(ch);
+  renderStats(ch);
+  refreshTooltips();
+}
+
+function showView(name) {
+  document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.view === name)));
+  document.querySelectorAll(".view").forEach(v => { v.hidden = v.id !== `view-${name}`; });
+  storage.set("dagbok-vy", name);
+  refreshTooltips();
+}
+
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
+
+const lightbox = $("#lightbox");
+document.addEventListener("click", ev => {
+  const img = ev.target.closest("img[data-caption]");
+  if (img) {
+    lightbox.querySelector("img").src = img.src;
+    lightbox.querySelector("p").textContent = img.dataset.caption;
+    lightbox.showModal();
+  } else if (ev.target.closest("#lightbox")) {
+    lightbox.close();
+  }
+});
+
+const savedTheme = storage.get("dagbok-tema");
+if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+$("#themeToggle").addEventListener("click", () => {
+  const dark = document.documentElement.dataset.theme
+    ? document.documentElement.dataset.theme === "dark"
+    : matchMedia("(prefers-color-scheme: dark)").matches;
+  const next = dark ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  storage.set("dagbok-tema", next);
+});
+
+if (!characters.length) {
+  $("#heroName").textContent = "Ingen dagbok än";
+  $("#view-story").innerHTML = `<p class="empty">Hittade ingen dagboksdata. Spela en stund med Dagbok-addonet, logga ut och kör sedan <code>Uppdatera hemsidan.cmd</code>.</p>`;
+} else {
+  const select = $("#characterSelect");
+  if (characters.length > 1) {
+    select.hidden = false;
+    select.innerHTML = characters.map((c, i) => `<option value="${i}">${esc(c.name)}${c.realm ? " – " + esc(c.realm) : ""}</option>`).join("");
+    select.addEventListener("change", () => showCharacter(+select.value));
+  }
+  const saved = storage.get("dagbok-karaktar");
+  const index = Math.max(0, characters.findIndex(c => (c.db.folder || c.name) === saved));
+  select.value = String(index);
+  showCharacter(index);
+  const view = storage.get("dagbok-vy");
+  if (view && $(`#view-${view}`)) showView(view);
+}
+
+if (DATA.generated) $("#footer").textContent = `Senast uppdaterad ${longDate(DATA.generated)} kl. ${clock(DATA.generated)}`;
+window.addEventListener("load", refreshTooltips);
+</script>
+</body>
+</html>

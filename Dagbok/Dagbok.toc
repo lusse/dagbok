@@ -1,0 +1,11 @@
+## Interface: 16001
+## Title: Dagbok
+## Notes: Din karaktärs historia - nivåer, loot, bossar och minnen, med skärmdumpar.
+## Author: lusse
+## Version: 0.1.0
+## SavedVariablesPerCharacter: DagbokDB
+## IconTexture: Interface\Icons\INV_Misc_Book_09
+## AddonCompartmentFunc: Dagbok_OnAddonCompartmentClick
+
+Core.lua
+UI.lua
