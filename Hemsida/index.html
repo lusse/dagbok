@@ -240,8 +240,27 @@ a.item:hover { text-decoration: underline; }
 .bars { margin-top: 12px; display: grid; gap: 6px; }
 .bar { display: grid; grid-template-columns: 110px 1fr 56px; gap: 10px; align-items: center; font-size: 16px; }
 .bar .track { height: 10px; border-radius: 5px; background: var(--bg-deep); overflow: hidden; }
-.bar .fill { height: 100%; border-radius: 5px; background: currentColor; }
+.bar .fill { display: block; height: 100%; border-radius: 5px; background: currentColor; }
 .bar .count { text-align: right; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.theme-nav { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 28px; font-family: var(--display); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+.theme-nav a { color: var(--ink-soft); text-decoration: none; }
+.theme-nav a:hover { color: var(--accent); }
+.theme { margin: 0 0 44px; scroll-margin-top: 20px; }
+.theme h3 { font-family: var(--display); font-weight: 600; font-size: 26px; letter-spacing: .08em; margin: 0; color: var(--ink); display: flex; align-items: center; gap: 14px; }
+.theme h3::after { content: ""; flex: 1; height: 1px; background: linear-gradient(to right, var(--rule), transparent); }
+.theme .lead { font-style: italic; color: var(--ink-soft); margin: 4px 0 16px; font-size: 18px; }
+.runs { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 17px; font-variant-numeric: tabular-nums; }
+.runs th { font-family: var(--display); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; text-align: right; padding: 4px 6px; }
+.runs td { padding: 6px; border-top: 1px solid var(--rule); text-align: right; }
+.runs td:first-child, .runs th:first-child { text-align: left; }
+.bar { grid-template-columns: minmax(90px, 170px) 1fr auto; }
+.bar.standing { color: var(--ink); }
+.bar.standing .fill { background: #b59a2a; }
+.bar.standing1 .fill, .bar.standing2 .fill { background: #b33a2e; }
+.bar.standing3 .fill { background: #c8762a; }
+.bar.standing5 .fill, .bar.standing6 .fill, .bar.standing7 .fill { background: #3f8f3a; }
+.bar.standing8 .fill { background: #2a9d8f; }
+@media (max-width: 640px) { .runs { font-size: 15px; } .runs th:nth-child(3), .runs td:nth-child(3) { display: none; } }
 
 .empty { text-align: center; color: var(--ink-faint); font-style: italic; padding: 80px 0; }
 .empty code { font-style: normal; }
@@ -461,8 +480,25 @@ function Narrator(ch) {
         `${N} tog sig in i ${Z} – nya marker, nya faror.`,
       ], e.time);
     },
+    record(e) {
+      const amount = `<strong>${fmt(e.amount || 0)}</strong>`;
+      const spell = e.spell ? em(e.spell) : "ett slag";
+      const target = e.target ? ` mot ${em(shortName(e.target))}` : "";
+      if (e.record === "biggestCritHeal") return pick([
+        `Ljuset flödade som aldrig förr: en kritisk ${spell} helade ${amount}${e.target ? ` på ${em(shortName(e.target))}` : ""} – ${Ns} största hittills.`,
+        `${N} slog sitt eget rekord i helande – ${spell} för ${amount}.`,
+      ], e.time);
+      return pick([
+        `Ett slag att minnas: ${spell} träffade kritiskt för ${amount}${target}. Aldrig tidigare hade ${N} slagit så hårt.`,
+        `${N} satte nytt rekord – en kritisk ${spell} för ${amount}${target}.`,
+      ], e.time);
+    },
     dungeon(e) {
       const Z = em(zoneName(e));
+      if (e.runs) return pick([
+        `För ${e.runs}:e gången steg ${N} in i ${Z}. Varje hörn var bekant vid det här laget.`,
+        `${Z} igen – ${N} hade nu varit där ${e.runs} gånger.`,
+      ], e.time);
       const G = groupOf(e).map(nameTag);
       if (e.instanceType === "raid") return `Tillsammans med en hel armé av följeslagare${G.length ? `, däribland ${listJoin(G)},` : ""} trädde ${N} in i ${Z}.`;
       if (G.length) return pick([
@@ -899,14 +935,14 @@ function renderEpilogue(ch, N, Ns) {
 const KIND_LABELS = {
   start: "Början", level: "Nivå", loot: "Loot", boss: "Boss", rare: "Sällsynt", achievement: "Bedrift", zone: "Ny plats",
   dungeon: "Dungeon", battleground: "Slagfält", quest: "Uppdrag", death: "Död", pvp: "PvP", pvpdeath: "PvP", gold: "Guld",
-  guild: "Guild", reputation: "Rykte", profession: "Yrke", mount: "Riddjur", duel: "Duell", memory: "Minne", companion: "Vänskap",
+  guild: "Guild", reputation: "Rykte", profession: "Yrke", mount: "Riddjur", duel: "Duell", memory: "Minne", companion: "Vänskap", record: "Rekord",
 };
 const FILTERS = [
   { label: "Allt", exclude: ["quest"] },
   { label: "Framsteg", kinds: ["level", "profession", "reputation", "gold", "guild", "mount"] },
   { label: "Loot", kinds: ["loot"] },
   { label: "Resan", kinds: ["zone", "dungeon", "battleground", "quest"] },
-  { label: "Strid", kinds: ["boss", "rare", "achievement", "death", "duel"] },
+  { label: "Strid", kinds: ["boss", "rare", "achievement", "death", "duel", "record"] },
   { label: "PvP", kinds: ["pvp", "pvpdeath"] },
   { label: "Sällskap", kinds: ["companion"], withGroup: true },
   { label: "Minnen", kinds: ["memory", "start"] },
@@ -967,56 +1003,181 @@ function renderGallery(ch) {
   ).join("") + `</div>`;
 }
 
+const STANDING_NAMES = ["", "Hatad", "Fientlig", "Ovänlig", "Neutral", "Vänlig", "Ärad", "Vördad", "Upphöjd"];
+const EMOTE_VERBS = { HUG: "Kramat", WAVE: "Vinkat", DANCE: "Dansat", BOW: "Bugat", CHEER: "Jublat", LAUGH: "Skrattat", KISS: "Pussat", THANK: "Tackat", SALUTE: "Gjort honnör", ROAR: "Vrålat", CRY: "Gråtit", FLEX: "Spänt musklerna", SLEEP: "Sovit", SIT: "Satt sig ner" };
+const DEATH_CAUSES = { Falling: "Fall", Drowning: "Drunkning", Fatigue: "Utmattning", Fire: "Eld", Lava: "Lava", Slime: "Slem" };
+
 function renderStats(ch) {
-  const s = ch.stats, pvp = ch.pvp;
+  const s = ch.stats, pvp = ch.pvp, db = ch.db;
+  const n = v => +v || 0;
+  const big = v => v >= 1e6 ? `${(v / 1e6).toFixed(1).replace(".", ",")} milj.` : fmt(v);
   const card = (label, value, note, cls = "") => `<div class="card ${cls}"><div class="label">${label}</div><div class="value">${value}</div>${note ? `<div class="note">${note}</div>` : ""}</div>`;
-  const zones = Object.keys(ch.db.zones || {}).length || new Set(ch.entries.map(e => e.zone).filter(Boolean)).size;
-  const gold = (s.maxMoney || 0) / 10000;
-
-  let html = `<div class="stats">`;
-  html += card("Nivå", ch.level, describeCharacter(ch));
-  html += card("Uppdrag", fmt(s.quests), "slutförda");
-  html += card("Fiender fällda", fmt(s.npcKills), "med egen dödsstöt");
-  html += card("Dödsfall", fmt(s.deaths), "");
-  html += card("Platser", fmt(zones), "upptäckta zoner");
-  html += card("Bossar", fmt(s.bossKills), "besegrade");
-  html += card("Guldrekord", fmt(gold), "guld på fickan som mest");
-  html += card("Föremål", fmt(s.items), `försäljningsvärde ${money(s.vendorValue || 0)}`);
-  html += card("PvP", `${fmt(pvp.kills)} / ${fmt(pvp.deaths)}`, "kills / dödsfall");
-  if (s.duelsWon || s.duelsLost) html += card("Dueller", `${fmt(s.duelsWon)} / ${fmt(s.duelsLost)}`, "vunna / förlorade");
-
-  const byQuality = s.byQuality || {};
-  const qualities = [0, 1, 2, 3, 4, 5, 6, 7].map(q => [q, luaGet(byQuality, q) || 0]).filter(([, n]) => n > 0);
-  if (qualities.length) {
-    const max = Math.max(...qualities.map(([, n]) => n));
-    html += `<div class="card wide"><div class="label">Loot efter kvalitet</div><div class="bars">`;
-    for (const [q, n] of qualities) {
-      html += `<div class="bar q${q}"><span>${QUALITY_NAMES[q]}</span><span class="track"><span class="fill" style="width:${(n / max * 100).toFixed(1)}%"></span></span><span class="count">${fmt(n)}</span></div>`;
-    }
-    html += `</div></div>`;
-  }
-
-  const topList = (label, table, unit) => {
-    const rows = Object.entries(table || {}).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const top = table => Object.entries(table || {}).filter(([, c]) => n(c) > 0).sort((a, b) => n(b[1]) - n(a[1]));
+  const topList = (label, table, unit, rename = k => k) => {
+    const rows = top(table).slice(0, 5);
     if (!rows.length) return "";
-    return `<div class="card"><div class="label">${label}</div><ol>${rows.map(([n, c]) => `<li>${esc(n)} <span class="note">(${fmt(c)} ${unit})</span></li>`).join("")}</ol></div>`;
+    return `<div class="card"><div class="label">${label}</div><ol>${rows.map(([k, c]) => `<li>${esc(shortName(rename(k)))} <span class="note">(${fmt(c)} ${unit})</span></li>`).join("")}</ol></div>`;
   };
+  const barList = (label, rows) => {
+    if (!rows.length) return "";
+    return `<div class="card wide"><div class="label">${label}</div><div class="bars">` + rows.map(r =>
+      `<div class="bar ${r.cls || ""}"><span>${esc(r.name)}</span><span class="track"><span class="fill" style="width:${Math.min(100, r.share * 100).toFixed(1)}%"></span></span><span class="count">${r.count}</span></div>`
+    ).join("") + `</div></div>`;
+  };
+  const record = (label, r) => r && n(r.amount) ? card(label, fmt(r.amount),
+    `${esc(r.spell || "Närstrid")}${r.target ? ` på ${esc(shortName(r.target))}` : ""}${r.time ? ` · ${shortDate(r.time)}` : ""}${r.level ? ` · nivå ${r.level}` : ""}`) : "";
+
+  const sections = [];
+  const toc = [];
+  const section = (id, title, lead, body) => {
+    if (!body.trim()) return;
+    toc.push(`<a href="#tema-${id}">${title}</a>`);
+    sections.push(`<section class="theme" id="tema-${id}"><h3>${title}</h3><p class="lead">${lead}</p><div class="stats">${body}</div></section>`);
+  };
+  const N = esc(ch.name);
+
+  // Vandraren
+  const zones = Object.keys(db.zones || {}).length || new Set(ch.entries.map(e => e.zone).filter(Boolean)).size;
+  const zoneTime = top(db.zoneTime);
+  const favFlight = top(db.flights)[0];
+  let body = n(s.played) ? card("Speltid", duration(n(s.played)), "sedan dagboken öppnades") : "";
+  body += card("Platser", fmt(zones), "upptäckta zoner");
+  if (n(s.flightCount)) body += card("Flygturer", fmt(s.flightCount), favFlight ? `oftast till ${esc(favFlight[0])} (${times(n(favFlight[1]))})` : "");
+  if (n(s.hearths)) body += card("Hearthstone", fmt(s.hearths), "gånger hem igen");
+  if (n(s.jumps)) body += card("Hopp", fmt(s.jumps), "för att man kan");
+  if (zoneTime.length) {
+    const max = n(zoneTime[0][1]);
+    body += barList("Där tiden gick", zoneTime.slice(0, 6).map(([z, t]) => ({ name: z, share: n(t) / max, count: duration(n(t)) })));
+  }
+  body += topList("Flygmål", db.flights, "ggr");
+  section("vandraren", "Vandraren", `Vägar, vyer och vindar – var ${N} har varit och hur resan gick dit.`, body);
+
+  // Erfarenheten
+  body = card("Nivå", ch.level, describeCharacter(ch));
+  if (n(s.xp)) body += card("Erfarenhet", big(n(s.xp)), "XP insamlat");
+  const levelPlayed = Object.entries(db.levelPlayed || {}).map(([l, t]) => [+l, n(t)]).sort((a, b) => a[0] - b[0]);
+  const perLevel = [];
+  for (let i = 1; i < levelPlayed.length; i++) {
+    if (levelPlayed[i][0] === levelPlayed[i - 1][0] + 1) perLevel.push({ level: levelPlayed[i][0], seconds: levelPlayed[i][1] - levelPlayed[i - 1][1] });
+  }
+  if (perLevel.length) {
+    const max = Math.max(...perLevel.map(p => p.seconds));
+    body += barList("Tid per nivå", perLevel.slice(-10).map(p => ({ name: `Nivå ${p.level}`, share: p.seconds / max, count: duration(p.seconds) })));
+  }
+  section("erfarenheten", "Erfarenheten", "Varje nivå en lärdom.", body);
+
+  // Svärdet
+  body = card("Fiender fällda", fmt(s.npcKills), "med egen dödsstöt");
+  if (n(s.damageDone)) body += card("Skada utdelad", big(n(s.damageDone)), n(s.crits) ? `${fmt(s.crits)} kritiska träffar` : "");
+  body += record("Hårdaste träffen", s.biggestHit);
+  body += record("Största critten", s.biggestCrit);
+  if (n(s.damageTaken)) body += card("Skada tagen", big(n(s.damageTaken)), "och fortfarande på benen");
+  body += topList("Favoritformler", db.spells, "kast");
+  body += topList("Mest fällda fiender", db.creatures, "st");
+  section("svardet", "Svärdet", "Det som stod i vägen föll.", body);
+
+  // Ljuset
+  body = "";
+  if (n(s.healingDone)) {
+    const total = n(s.healingDone) + n(s.overhealing);
+    body += card("Helat", big(n(s.healingDone)), total ? `${Math.round(n(s.overhealing) / total * 100)} % överhealing` : "");
+  }
+  body += record("Största healen", s.biggestHeal);
+  body += record("Största crit-healen", s.biggestCritHeal);
+  if (n(s.critHeals)) body += card("Kritiska heals", fmt(s.critHeals), "");
+  section("ljuset", "Ljuset", `Där andra föll stod ${N} kvar – och lyfte dem upp igen.`, body);
+
+  // Djupen
+  body = "";
+  const instances = Object.entries(db.instances || {}).sort((a, b) => n(b[1].runs) - n(a[1].runs));
+  if (instances.length) {
+    body += `<div class="card wide"><div class="label">Instanser</div><table class="runs"><thead><tr><th></th><th>Körningar</th><th>Tid inne</th><th>Bossar</th><th>Snabbast</th></tr></thead><tbody>`;
+    for (const [name, v] of instances.slice(0, 12)) {
+      body += `<tr><td>${esc(name)}</td><td>${fmt(n(v.runs))}</td><td>${n(v.seconds) ? duration(n(v.seconds)) : "–"}</td><td>${fmt(n(v.bosses))}</td><td>${n(v.fastest) ? duration(n(v.fastest)) : "–"}</td></tr>`;
+    }
+    body += `</tbody></table></div>`;
+  }
+  if (n(s.bossKills)) body += card("Bossar", fmt(s.bossKills), "besegrade totalt");
+  body += topList("Mest besegrade bossar", db.bosses, "ggr");
+  section("djupen", "Djupen", "Mörka salar, gamla fiender och skatter som vaktas.", body);
+
+  // Skattkammaren
+  body = card("Guldrekord", money(n(s.maxMoney)), "på fickan som mest");
+  if (n(s.moneyEarned)) body += card("Intjänat", money(n(s.moneyEarned)), n(s.questMoney) ? `varav ${money(n(s.questMoney))} från uppdrag` : "");
+  if (n(s.moneySpent)) body += card("Spenderat", money(n(s.moneySpent)), n(s.repairCost) ? `varav ${money(n(s.repairCost))} på reparationer` : "");
+  body += card("Föremål", fmt(s.items), `försäljningsvärde ${money(n(s.vendorValue))}`);
+  const byQuality = s.byQuality || {};
+  const qualities = [0, 1, 2, 3, 4, 5, 6, 7].map(q => [q, n(luaGet(byQuality, q))]).filter(([, c]) => c > 0);
+  if (qualities.length) {
+    const max = Math.max(...qualities.map(([, c]) => c));
+    body += barList("Loot efter kvalitet", qualities.map(([q, c]) => ({ name: QUALITY_NAMES[q], share: c / max, count: fmt(c), cls: `q${q}` })));
+  }
+  if (s.bestLink) body += `<div class="card wide"><div class="label">Värdefullaste fyndet</div><div class="value" style="font-size:26px">${wowText(s.bestLink)}</div><div class="note">${money(n(s.bestValue))} hos handlaren</div></div>`;
+  body += topList("Mest lootat", db.looted, "st");
+  section("skattkammaren", "Skattkammaren", "Guld som kom, guld som gick – och det som glimmade däremellan.", body);
+
+  // Hantverket
+  body = "";
+  const skills = top(db.skills);
+  if (skills.length) body += barList("Yrken", skills.map(([k, r]) => ({ name: k, share: n(r) / 300, count: `${n(r)} / 300` })));
+  if (n(s.crafts)) body += card("Tillverkat", fmt(s.crafts), "föremål med egna händer");
+  body += topList("Mest tillverkat", db.crafted, "st");
+  section("hantverket", "Hantverket", "Tråd, läder och tålamod.", body);
+
+  // Ryktet
+  const factions = Object.entries(db.factions || {}).map(([k, f]) => ({ name: k, ...f }))
+    .sort((a, b) => n(b.standing) - n(a.standing) || n(b.value) / (n(b.max) || 1) - n(a.value) / (n(a.max) || 1));
+  body = "";
+  if (factions.length) {
+    body += `<div class="card wide"><div class="label">Faktioner</div><div class="bars">` + factions.slice(0, 20).map(f => {
+      const share = n(f.max) ? n(f.value) / n(f.max) : 0;
+      const progress = n(f.max) ? ` · ${fmt(n(f.value))}/${fmt(n(f.max))}` : "";
+      return `<div class="bar standing standing${n(f.standing)}"><span>${esc(f.name)}</span><span class="track"><span class="fill" style="width:${(share * 100).toFixed(1)}%"></span></span><span class="count">${STANDING_NAMES[n(f.standing)] || ""}${progress}</span></div>`;
+    }).join("") + `</div></div>`;
+  }
+  section("ryktet", "Ryktet", `Vad världen säger om ${N} när ${N} inte hör på.`, body);
+
+  // Uppdragen
+  body = card("Uppdrag", fmt(s.quests), "slutförda");
+  if (n(s.questXP)) body += card("Erfarenhet från uppdrag", big(n(s.questXP)), "XP");
+  body += topList("Flest uppdrag i", db.questZones, "st");
+  section("uppdragen", "Uppdragen", "Ingen bad om hjälp förgäves.", body);
+
+  // Döden
+  body = card("Dödsfall", fmt(s.deaths), "");
+  if (n(s.resurrected)) body += card("Återupplivad", times(n(s.resurrected)), "av vänner");
+  if (n(s.spiritHealer)) body += card("Spirit healer", times(n(s.spiritHealer)), "när ingen annan fanns");
+  body += topList("Dödsorsaker", db.deathCauses, "ggr", k => DEATH_CAUSES[k] || k);
+  body += topList("Farligaste platser", db.deathZones, "dödsfall");
+  body += topList("Livräddare", db.resurrectors, "ggr");
+  section("doden", "Döden", "Den som aldrig fallit har aldrig försökt.", body);
+
+  // Fiendesidan
+  body = card("PvP", `${fmt(pvp.kills)} / ${fmt(pvp.deaths)}`, "kills / dödsfall");
+  if (s.duelsWon || s.duelsLost) body += card("Dueller", `${fmt(s.duelsWon)} / ${fmt(s.duelsLost)}`, "vunna / förlorade");
+  body += topList("Favoritoffer", pvp.victims, "ggr");
+  body += topList("Ärkefiender", pvp.nemeses, "ggr");
+  section("fiendesidan", "Fiendesidan", "Det finns de som bär fel färger.", body);
+
+  // Sällskapet
+  body = "";
   const friends = companionsOf(ch).filter(c => c.seconds >= 600).slice(0, 8);
   if (friends.length) {
-    html += `<div class="card wide"><div class="label">Följeslagare</div><ol class="friends">`;
+    body += `<div class="card wide"><div class="label">Följeslagare</div><ol class="friends">`;
     for (const c of friends) {
       const who = [c.level ? `nivå ${c.level}` : "", c.class || ""].filter(Boolean).join(" ");
       const facts = [duration(c.seconds) + " tillsammans", c.groups ? `${times(c.groups)} i grupp` : "", c.bosses ? `${fmt(c.bosses)} ${c.bosses === 1 ? "boss" : "bossar"}` : ""].filter(Boolean);
-      html += `<li><span class="name">${esc(shortName(c.name))}</span>${who ? ` <span class="note">${esc(who)}</span>` : ""}<div class="note">${facts.join(" · ")}${c.first ? ` · först ${shortDate(c.first)}` : ""}</div></li>`;
+      body += `<li><span class="name">${esc(shortName(c.name))}</span>${who ? ` <span class="note">${esc(who)}</span>` : ""}<div class="note">${facts.join(" · ")}${c.first ? ` · först ${shortDate(c.first)}` : ""}</div></li>`;
     }
-    html += `</ol></div>`;
+    body += `</ol></div>`;
   }
-  html += topList("Mest fällda fiender", ch.db.creatures, "st");
-  html += topList("Favoritoffer", pvp.victims, "ggr");
-  html += topList("Ärkefiender", pvp.nemeses, "ggr");
-  if (s.bestLink) html += `<div class="card wide"><div class="label">Värdefullaste fyndet</div><div class="value" style="font-size:26px">${wowText(s.bestLink)}</div><div class="note">${money(s.bestValue || 0)} hos handlaren</div></div>`;
-  html += `</div>`;
-  $("#view-stats").innerHTML = html;
+  const emotes = top(db.emotes);
+  if (emotes.length) body += `<div class="card"><div class="label">Gester</div><ol>${emotes.slice(0, 5).map(([k, c]) =>
+    `<li>${EMOTE_VERBS[k] ? esc(EMOTE_VERBS[k]) : `/${esc(k.toLowerCase())}`} <span class="note">(${times(n(c))})</span></li>`).join("")}</ol></div>`;
+  section("sallskapet", "Sällskapet", "Ingen hjälte vandrar ensam för länge.", body);
+
+  $("#view-stats").innerHTML = `<nav class="theme-nav">${toc.join("")}</nav>` + sections.join("");
+  refreshTooltips();
 }
 
 function refreshTooltips() {

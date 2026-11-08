@@ -42,6 +42,15 @@ local function InitDB()
     db.reputation = db.reputation or {}
     db.skills = db.skills or {}
     db.companions = db.companions or {}
+    for _, key in ipairs({ "instances", "bosses", "questZones", "deathCauses", "deathZones", "zoneTime", "levelPlayed",
+        "spells", "flights", "crafted", "emotes", "looted", "resurrectors", "factions" }) do
+        db[key] = db[key] or {}
+    end
+    for _, key in ipairs({ "moneyEarned", "moneySpent", "questXP", "questMoney", "xp", "damageDone", "healingDone",
+        "overhealing", "damageTaken", "crits", "jumps", "flightCount", "hearths", "repairCost", "resurrected",
+        "spiritHealer", "crafts", "played", "critHeals" }) do
+        stats[key] = stats[key] or 0
+    end
     db.pvp = db.pvp or {}
     local pvp = db.pvp
     pvp.kills = pvp.kills or 0
@@ -254,6 +263,7 @@ end
 
 local function OnLevelUp(level)
     ns.db.character.level = level
+    ns.db.levelPlayed[level] = ns.db.stats.played
     local maxLevel = GetMaxLevelForPlayerExpansion and GetMaxLevelForPlayerExpansion()
     local isMax = level == maxLevel
     local milestone = isMax or level % math.max(1, ns.db.settings.levelInterval) == 0
@@ -276,6 +286,15 @@ for _, global in ipairs({ "LOOT_ITEM_SELF_MULTIPLE", "LOOT_ITEM_PUSHED_SELF_MULT
     if _G[global] then tinsert(lootPatterns, ToPattern(_G[global])) end
 end
 
+local craftPatterns = {}
+for _, global in ipairs({ "LOOT_ITEM_CREATED_SELF_MULTIPLE", "LOOT_ITEM_CREATED_SELF" }) do
+    if _G[global] then tinsert(craftPatterns, ToPattern(_G[global])) end
+end
+
+local function ItemName(link)
+    return link:match("%[(.-)%]") or link
+end
+
 local function RecordLoot(link, qty)
     local item = Item:CreateFromItemLink(link)
     if item:IsItemEmpty() then return end
@@ -284,6 +303,8 @@ local function RecordLoot(link, qty)
         quality = quality or 0
         local value = (sellPrice or 0) * qty
         local stats = ns.db.stats
+        local name = ItemName(link)
+        ns.db.looted[name] = (ns.db.looted[name] or 0) + qty
         stats.items = stats.items + qty
         stats.byQuality[quality] = (stats.byQuality[quality] or 0) + qty
         stats.vendorValue = stats.vendorValue + value
@@ -302,6 +323,16 @@ end
 
 local function OnLoot(msg)
     if IsSecret(msg) then return end
+    for _, pattern in ipairs(craftPatterns) do
+        local link, qty = msg:match(pattern)
+        if link then
+            local name = ItemName(link)
+            qty = tonumber(qty) or 1
+            ns.db.stats.crafts = ns.db.stats.crafts + qty
+            ns.db.crafted[name] = (ns.db.crafted[name] or 0) + qty
+            return
+        end
+    end
     for _, pattern in ipairs(lootPatterns) do
         local link, qty = msg:match(pattern)
         if link then
@@ -320,6 +351,15 @@ local function OnEncounterEnd(encounterID, encounterName, difficultyID, groupSiz
     for name in pairs(groupMembers) do
         local c = db.companions[name]
         if c then c.bosses = c.bosses + 1 end
+    end
+    if not IsSecret(encounterName) then
+        db.bosses[encounterName] = (db.bosses[encounterName] or 0) + 1
+    end
+    local run = db.run
+    if run then
+        run.bosses = run.bosses + 1
+        local instance = db.instances[run.name]
+        if instance then instance.bosses = instance.bosses + 1 end
     end
 
     -- Logga bara första dödandet per boss och svårighetsgrad, men räkna alla
@@ -407,9 +447,74 @@ local function RecordCreatureKill(guid, name)
     end
 end
 
+local MELEE = "Närstrid"
+local RECORD_LABELS = { biggestCrit = "Ny crit-rekord", biggestCritHeal = "Ny rekord-crit-heal" }
+
+-- Sparar rekordet om det slogs; healing räknas utan överhealing
+local function RecordBest(key, amount, spell, target)
+    local stats = ns.db.stats
+    local previous = stats[key]
+    if amount <= (previous and previous.amount or 0) then return end
+    stats[key] = { amount = amount, spell = spell, target = target, time = time(), level = UnitLevel("player") }
+    -- Crit-rekord blir en dagboksrad när det gamla slås med minst 10 %
+    local label = RECORD_LABELS[key]
+    if label and previous and amount >= previous.amount * 1.1 then
+        local text = format("%s: %d med %s%s", label, amount, spell or MELEE, target and (" på " .. target) or "")
+        ns.AddEntry("record", text, { record = key, amount = amount, spell = spell, target = target, previous = previous.amount })
+    end
+end
+
+
+-- Skada, healing och formler från spelaren själv
+local function OnOwnCombatEvent(subevent, destName, ...)
+    local db = ns.db
+    local stats = db.stats
+    if subevent == "SPELL_CAST_SUCCESS" then
+        local _, spellName = ...
+        if spellName and not IsSecret(spellName) then db.spells[spellName] = (db.spells[spellName] or 0) + 1 end
+    elseif subevent == "SWING_DAMAGE" then
+        local amount, _, _, _, _, _, critical = ...
+        if type(amount) ~= "number" then return end
+        stats.damageDone = stats.damageDone + amount
+        if critical then
+            stats.crits = stats.crits + 1
+            RecordBest("biggestCrit", amount, MELEE, destName)
+        end
+        RecordBest("biggestHit", amount, MELEE, destName)
+    elseif subevent == "SPELL_DAMAGE" or subevent == "SPELL_PERIODIC_DAMAGE" or subevent == "RANGE_DAMAGE" then
+        local _, spellName, _, amount, _, _, _, _, _, critical = ...
+        if type(amount) ~= "number" then return end
+        stats.damageDone = stats.damageDone + amount
+        if critical then
+            stats.crits = stats.crits + 1
+            RecordBest("biggestCrit", amount, spellName, destName)
+        end
+        RecordBest("biggestHit", amount, spellName, destName)
+    elseif subevent == "SPELL_HEAL" or subevent == "SPELL_PERIODIC_HEAL" then
+        local _, spellName, _, amount, overhealing, _, critical = ...
+        if type(amount) ~= "number" then return end
+        local effective = amount - (overhealing or 0)
+        stats.healingDone = stats.healingDone + effective
+        stats.overhealing = stats.overhealing + (overhealing or 0)
+        if critical then
+            stats.critHeals = (stats.critHeals or 0) + 1
+            RecordBest("biggestCritHeal", effective, spellName, destName)
+        end
+        RecordBest("biggestHeal", effective, spellName, destName)
+    end
+end
+
 local function OnCombatLog()
     local _, subevent, _, sourceGUID, sourceName, _, _, destGUID, destName, _, _, environmentalType = CombatLogGetCurrentEventInfo()
     if IsSecret(subevent) then return end
+    if sourceGUID == playerGUID then
+        OnOwnCombatEvent(subevent, destName, select(12, CombatLogGetCurrentEventInfo()))
+    end
+    if destGUID == playerGUID and subevent:find("_DAMAGE$") then
+        local index = subevent == "SWING_DAMAGE" and 12 or subevent == "ENVIRONMENTAL_DAMAGE" and 13 or 15
+        local amount = select(index, CombatLogGetCurrentEventInfo())
+        if type(amount) == "number" then ns.db.stats.damageTaken = ns.db.stats.damageTaken + amount end
+    end
     if subevent == "PARTY_KILL" then
         local mine = sourceGUID == playerGUID
         if IsPlayerGUID(destGUID) then
@@ -442,6 +547,10 @@ local function OnPlayerDead()
     recentAttacker = nil
     local _, instanceType = IsInInstance()
     db.stats.deaths = db.stats.deaths + 1
+    local zone = GetRealZoneText()
+    if zone and zone ~= "" then db.deathZones[zone] = (db.deathZones[zone] or 0) + 1 end
+    local cause = attacker and (attacker.name or attacker.environment)
+    if cause then db.deathCauses[cause] = (db.deathCauses[cause] or 0) + 1 end
 
     if attacker and attacker.isPlayer then
         pvp.deaths = pvp.deaths + 1
@@ -462,10 +571,70 @@ end
 
 -- Resan: zoner, instanser, uppdrag ------------------------------------
 
+local RUN_MILESTONES = { [10] = true, [25] = true, [50] = true, [100] = true, [250] = true }
+local RUN_GAP = 900 -- kommer man tillbaka inom 15 minuter är det samma körning
+
+-- Avslutar körningen och sparar den som snabbast om alla kända bossar föll
+local function EndRun()
+    local db = ns.db
+    local run = db.run
+    db.run = nil
+    local instance = run and db.instances[run.name]
+    if not instance or run.bosses == 0 then return end
+    local duration = run.lastSeen - run.start
+    local best = instance.maxBosses or 0
+    if run.bosses > best or (run.bosses == best and (not instance.fastest or duration < instance.fastest)) then
+        instance.maxBosses = run.bosses
+        instance.fastest = duration
+    end
+end
+
+local function UpdateInstanceRun(zone)
+    local db = ns.db
+    local now = time()
+    local inInstance, instanceType = IsInInstance()
+    if not inInstance or (instanceType ~= "party" and instanceType ~= "raid") then return end
+    local run = db.run
+    if run and run.name == zone and now - run.lastSeen < RUN_GAP then
+        run.lastSeen = now
+        return
+    end
+    EndRun()
+    local instance = db.instances[zone] or { runs = 0, seconds = 0, bosses = 0, first = now, type = instanceType }
+    db.instances[zone] = instance
+    instance.runs = instance.runs + 1
+    instance.last = now
+    db.run = { name = zone, start = now, lastSeen = now, bosses = 0 }
+    if RUN_MILESTONES[instance.runs] then
+        ns.AddEntry("dungeon", format("Gick in i %s för %d:e gången", zone, instance.runs), { runs = instance.runs, instanceType = instanceType })
+    end
+end
+
+-- Varje minut: speltid, tid per zon och tid i instansen
+local lastPlayTick
+local function TallyPlayTime()
+    if not ns.db then return end
+    local now = time()
+    local elapsed = lastPlayTick and math.min(now - lastPlayTick, 300) or 0
+    lastPlayTick = now
+    if elapsed <= 0 then return end
+    local db = ns.db
+    db.stats.played = db.stats.played + elapsed
+    local zone = GetRealZoneText()
+    if not zone or zone == "" or IsSecret(zone) then return end
+    db.zoneTime[zone] = (db.zoneTime[zone] or 0) + elapsed
+    local run = db.run
+    if run and run.name == zone and IsInInstance() then
+        run.lastSeen = now
+        db.instances[zone].seconds = db.instances[zone].seconds + elapsed
+    end
+end
+
 local function OnZoneChanged()
     local zone = GetRealZoneText()
     if not zone or zone == "" or IsSecret(zone) then return end
     local db = ns.db
+    UpdateInstanceRun(zone)
     if db.zones[zone] then return end
     db.zones[zone] = time()
 
@@ -488,6 +657,10 @@ end
 local function OnQuestTurnedIn(questID, xp, money)
     local stats = ns.db.stats
     stats.quests = stats.quests + 1
+    stats.questXP = stats.questXP + (tonumber(xp) or 0)
+    stats.questMoney = stats.questMoney + (tonumber(money) or 0)
+    local zone = GetRealZoneText()
+    if zone and zone ~= "" then ns.db.questZones[zone] = (ns.db.questZones[zone] or 0) + 1 end
     local title = C_QuestLog and C_QuestLog.GetTitleForQuestID and C_QuestLog.GetTitleForQuestID(questID) or lastQuestTitle
     lastQuestTitle = nil
     local text = title and format("Slutförde uppdraget %s", title) or "Slutförde ett uppdrag"
@@ -500,9 +673,17 @@ end
 
 local MONEY_MILESTONES = { 10000, 100000, 1000000, 10000000, 100000000 } -- 1, 10, 100, 1 000, 10 000 guld
 
+local lastMoney
+
 local function OnMoney()
     local stats = ns.db.stats
     local money = GetMoney()
+    if lastMoney then
+        local change = money - lastMoney
+        if change > 0 then stats.moneyEarned = stats.moneyEarned + change end
+        if change < 0 then stats.moneySpent = stats.moneySpent - change end
+    end
+    lastMoney = money
     local best = stats.maxMoney or money
     if money <= best then
         stats.maxMoney = best
@@ -540,10 +721,13 @@ local function OnReputation()
     if not GetNumFactions or not GetFactionInfo then return end
     local reputation = ns.db.reputation
     for i = 1, GetNumFactions() do
-        local name, _, standingID, _, _, _, _, _, isHeader, _, hasRep = GetFactionInfo(i)
+        local name, _, standingID, barMin, barMax, barValue, atWar, _, isHeader, _, hasRep = GetFactionInfo(i)
         if name and standingID and (not isHeader or hasRep) then
             local previous = reputation[name]
             reputation[name] = standingID
+            if barMin and barMax and barValue then
+                ns.db.factions[name] = { standing = standingID, value = barValue - barMin, max = barMax - barMin, total = barValue, atWar = atWar or nil }
+            end
             -- 5 = Friendly, 8 = Exalted
             if previous and standingID > previous and standingID >= 5 then
                 local label = _G["FACTION_STANDING_LABEL" .. standingID] or tostring(standingID)
@@ -623,6 +807,80 @@ local function OnSystemMessage(msg)
     end
 end
 
+-- Småstatistik: XP, resor, reparationer, återupplivning ----------------
+
+local lastXP, lastMaxXP
+
+local function OnXPUpdate(unit)
+    if unit and unit ~= "player" then return end
+    local xp, maxXP = UnitXP("player"), UnitXPMax("player")
+    if lastXP then
+        -- Har vi gått upp i nivå räknas resten av förra nivån plus det nya
+        local gained = xp >= lastXP and xp - lastXP or (lastMaxXP - lastXP) + xp
+        ns.db.stats.xp = ns.db.stats.xp + gained
+    end
+    lastXP, lastMaxXP = xp, maxXP
+end
+
+local HEARTHSTONE = 8690
+
+local function OnSpellcastSucceeded(unit, _, spellID)
+    if unit == "player" and spellID == HEARTHSTONE then
+        ns.db.stats.hearths = ns.db.stats.hearths + 1
+    end
+end
+
+local merchantRepairCost
+
+local function OnDurabilityChanged()
+    if not merchantRepairCost or not GetRepairAllCost then return end
+    local cost = GetRepairAllCost()
+    if cost < merchantRepairCost then
+        ns.db.stats.repairCost = ns.db.stats.repairCost + (merchantRepairCost - cost)
+    end
+    merchantRepairCost = cost
+end
+
+local function OnMerchantShow()
+    merchantRepairCost = GetRepairAllCost and GetRepairAllCost() or nil
+end
+
+local function OnMerchantClosed()
+    merchantRepairCost = nil
+end
+
+local function OnResurrectRequest(name)
+    local db = ns.db
+    db.stats.resurrected = db.stats.resurrected + 1
+    if name and not IsSecret(name) then db.resurrectors[name] = (db.resurrectors[name] or 0) + 1 end
+end
+
+local function OnSpiritHealer()
+    ns.db.stats.spiritHealer = ns.db.stats.spiritHealer + 1
+end
+
+-- Hooks på vanliga spelfunktioner; körs efter originalet och påverkar inget
+local function Count(key)
+    if ns.db then ns.db.stats[key] = ns.db.stats[key] + 1 end
+end
+
+local function SafeHook(name, hook)
+    if type(_G[name]) == "function" then hooksecurefunc(name, hook) end
+end
+
+SafeHook("JumpOrAscendStart", function() Count("jumps") end)
+SafeHook("TakeTaxiNode", function(index)
+    if not ns.db then return end
+    Count("flightCount")
+    local destination = TaxiNodeName and TaxiNodeName(index)
+    if destination then ns.db.flights[destination] = (ns.db.flights[destination] or 0) + 1 end
+end)
+SafeHook("DoEmote", function(token)
+    if not ns.db or type(token) ~= "string" then return end
+    token = token:upper()
+    ns.db.emotes[token] = (ns.db.emotes[token] or 0) + 1
+end)
+
 -- Händelser ------------------------------------------------------------
 
 local handlers = {}
@@ -666,11 +924,17 @@ function handlers.PLAYER_LOGIN()
     end)
     OnGroupChanged()
     C_Timer.NewTicker(60, TallyGroupTime)
+    lastMoney = GetMoney()
+    lastXP, lastMaxXP = UnitXP("player"), UnitXPMax("player")
+    if db.run and time() - db.run.lastSeen >= RUN_GAP then EndRun() end
+    TallyPlayTime()
+    C_Timer.NewTicker(60, TallyPlayTime)
 end
 
 function handlers.PLAYER_LOGOUT()
     local db = ns.db
     TallyGroupTime()
+    TallyPlayTime()
     local session = db.sessions[#db.sessions]
     if session then
         session.finish = time()
@@ -699,6 +963,13 @@ handlers.SKILL_LINES_CHANGED = OnSkillsChanged
 handlers.PLAYER_MOUNT_DISPLAY_CHANGED = OnMountChanged
 handlers.CHAT_MSG_SYSTEM = OnSystemMessage
 handlers.GROUP_ROSTER_UPDATE = OnGroupChanged
+handlers.PLAYER_XP_UPDATE = OnXPUpdate
+handlers.UNIT_SPELLCAST_SUCCEEDED = OnSpellcastSucceeded
+handlers.UPDATE_INVENTORY_DURABILITY = OnDurabilityChanged
+handlers.MERCHANT_SHOW = OnMerchantShow
+handlers.MERCHANT_CLOSED = OnMerchantClosed
+handlers.RESURRECT_REQUEST = OnResurrectRequest
+handlers.CONFIRM_XP_LOSS = OnSpiritHealer
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:SetScript("OnEvent", function(_, event, ...) handlers[event](...) end)

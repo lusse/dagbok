@@ -20,6 +20,7 @@ local KIND_ICONS = {
     mount = "Interface\\Icons\\Ability_Mount_RidingHorse",
     duel = "Interface\\Icons\\Ability_Warrior_Challange",
     companion = "Interface\\Icons\\Spell_Holy_PrayerOfHealing02",
+    record = "Interface\\Icons\\Ability_CriticalStrike",
 }
 
 local FILTERS = {
@@ -27,7 +28,7 @@ local FILTERS = {
     { label = "Framsteg", kinds = { level = true, profession = true, reputation = true, gold = true, guild = true, mount = true } },
     { label = "Loot", kinds = { loot = true } },
     { label = "Resan", kinds = { zone = true, dungeon = true, battleground = true, quest = true } },
-    { label = "Strid", kinds = { boss = true, rare = true, achievement = true, death = true, duel = true } },
+    { label = "Strid", kinds = { boss = true, rare = true, achievement = true, death = true, duel = true, record = true } },
     { label = "PvP", kinds = { pvp = true, pvpdeath = true } },
     { label = "Minnen", kinds = { memory = true, start = true, companion = true } },
 }
