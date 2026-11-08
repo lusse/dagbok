@@ -465,46 +465,108 @@ local function RecordBest(key, amount, spell, target)
 end
 
 
+local function CountSpell(spellName)
+    if spellName and not IsSecret(spellName) then
+        ns.db.spells[spellName] = (ns.db.spells[spellName] or 0) + 1
+    end
+end
+
+local function AddDamage(amount, critical, spell, target)
+    local stats = ns.db.stats
+    stats.damageDone = stats.damageDone + amount
+    if critical then
+        stats.crits = stats.crits + 1
+        RecordBest("biggestCrit", amount, spell, target)
+    end
+    RecordBest("biggestHit", amount, spell, target)
+end
+
+local function AddHeal(amount, overhealing, critical, spell, target)
+    local stats = ns.db.stats
+    local effective = amount - (overhealing or 0)
+    stats.healingDone = stats.healingDone + effective
+    stats.overhealing = stats.overhealing + (overhealing or 0)
+    if critical then
+        stats.critHeals = (stats.critHeals or 0) + 1
+        RecordBest("biggestCritHeal", effective, spell, target)
+    end
+    RecordBest("biggestHeal", effective, spell, target)
+end
+
 -- Skada, healing och formler från spelaren själv
 local function OnOwnCombatEvent(subevent, destName, ...)
-    local db = ns.db
-    local stats = db.stats
     if subevent == "SPELL_CAST_SUCCESS" then
         local _, spellName = ...
-        if spellName and not IsSecret(spellName) then db.spells[spellName] = (db.spells[spellName] or 0) + 1 end
+        CountSpell(spellName)
     elseif subevent == "SWING_DAMAGE" then
         local amount, _, _, _, _, _, critical = ...
         if type(amount) ~= "number" then return end
-        stats.damageDone = stats.damageDone + amount
-        if critical then
-            stats.crits = stats.crits + 1
-            RecordBest("biggestCrit", amount, MELEE, destName)
-        end
-        RecordBest("biggestHit", amount, MELEE, destName)
+        AddDamage(amount, critical, MELEE, destName)
     elseif subevent == "SPELL_DAMAGE" or subevent == "SPELL_PERIODIC_DAMAGE" or subevent == "RANGE_DAMAGE" then
         local _, spellName, _, amount, _, _, _, _, _, critical = ...
         if type(amount) ~= "number" then return end
-        stats.damageDone = stats.damageDone + amount
-        if critical then
-            stats.crits = stats.crits + 1
-            RecordBest("biggestCrit", amount, spellName, destName)
-        end
-        RecordBest("biggestHit", amount, spellName, destName)
+        AddDamage(amount, critical, spellName, destName)
     elseif subevent == "SPELL_HEAL" or subevent == "SPELL_PERIODIC_HEAL" then
         local _, spellName, _, amount, overhealing, _, critical = ...
         if type(amount) ~= "number" then return end
-        local effective = amount - (overhealing or 0)
-        stats.healingDone = stats.healingDone + effective
-        stats.overhealing = stats.overhealing + (overhealing or 0)
-        if critical then
-            stats.critHeals = (stats.critHeals or 0) + 1
-            RecordBest("biggestCritHeal", effective, spellName, destName)
-        end
-        RecordBest("biggestHeal", effective, spellName, destName)
+        AddHeal(amount, overhealing, critical, spellName, destName)
+    end
+end
+
+-- Reserv när stridsloggen inte når addons (som i Forever): UNIT_COMBAT saknar
+-- avsändare, så skada och heals tillskrivs oss strax efter egna formler eller när vi är solo
+local combatLogSeen = false
+local lastCast -- { spell, time }
+local CAST_WINDOW = 1.5
+local SHOOT = 5019 -- trollstavens autoskott räknas inte som favoritformel
+
+local function SpellName(spellID)
+    if C_Spell and C_Spell.GetSpellName then return C_Spell.GetSpellName(spellID) end
+    if GetSpellInfo then return (GetSpellInfo(spellID)) end
+end
+
+local function OnOwnSpellcast(spellID)
+    if combatLogSeen or IsSecret(spellID) then return end
+    local name = SpellName(spellID)
+    if IsSecret(name) then return end
+    lastCast = { spell = name, time = GetTime() }
+    if spellID ~= SHOOT then CountSpell(name) end
+end
+
+local function OnUnitCombat(unit, action, flagText, amount)
+    if combatLogSeen or IsSecret(action) or IsSecret(amount) or type(amount) ~= "number" or amount <= 0 then return end
+    local critical = not IsSecret(flagText) and flagText == "CRITICAL"
+    local recent = lastCast and GetTime() - lastCast.time < CAST_WINDOW and lastCast
+    local solo = not IsInGroup()
+    if unit == "player" and action == "WOUND" then
+        ns.db.stats.damageTaken = ns.db.stats.damageTaken + amount
+    elseif unit == "target" and action == "WOUND" and (recent or solo) then
+        local target = UnitName("target")
+        AddDamage(amount, critical, recent and recent.spell or MELEE, not IsSecret(target) and target or nil)
+    elseif action == "HEAL" and recent and (unit == "player" or unit == "target" or unit:find("^party")) then
+        local target = UnitName(unit)
+        AddHeal(amount, 0, critical, recent.spell, not IsSecret(target) and target or nil)
+    end
+end
+
+local function XPKillPattern()
+    local fmt = COMBATLOG_XPGAIN_FIRSTPERSON or "%s dies, you gain %d experience."
+    local prefix = fmt:match("^(.-)%%d") or fmt
+    prefix = prefix:gsub("([%%%(%)%.%+%-%*%?%[%]%^%$])", "%%%1"):gsub("%%%%s", "(.-)")
+    return "^" .. prefix
+end
+
+local function OnCombatXPGain(msg)
+    if combatLogSeen or IsSecret(msg) then return end
+    local name = msg:match(XPKillPattern())
+    if name and name ~= "" then
+        local targetGUID = UnitName("target") == name and UnitIsDead("target") and UnitGUID("target") or nil
+        RecordCreatureKill(targetGUID, name)
     end
 end
 
 local function OnCombatLog()
+    combatLogSeen = true
     local _, subevent, _, sourceGUID, sourceName, _, _, destGUID, destName, _, _, environmentalType = CombatLogGetCurrentEventInfo()
     if IsSecret(subevent) then return end
     if sourceGUID == playerGUID then
@@ -825,9 +887,11 @@ end
 local HEARTHSTONE = 8690
 
 local function OnSpellcastSucceeded(unit, _, spellID)
-    if unit == "player" and spellID == HEARTHSTONE then
+    if unit ~= "player" then return end
+    if spellID == HEARTHSTONE then
         ns.db.stats.hearths = ns.db.stats.hearths + 1
     end
+    OnOwnSpellcast(spellID)
 end
 
 local merchantRepairCost
@@ -965,6 +1029,8 @@ handlers.CHAT_MSG_SYSTEM = OnSystemMessage
 handlers.GROUP_ROSTER_UPDATE = OnGroupChanged
 handlers.PLAYER_XP_UPDATE = OnXPUpdate
 handlers.UNIT_SPELLCAST_SUCCEEDED = OnSpellcastSucceeded
+handlers.UNIT_COMBAT = OnUnitCombat
+handlers.CHAT_MSG_COMBAT_XP_GAIN = OnCombatXPGain
 handlers.UPDATE_INVENTORY_DURABILITY = OnDurabilityChanged
 handlers.MERCHANT_SHOW = OnMerchantShow
 handlers.MERCHANT_CLOSED = OnMerchantClosed
@@ -1003,6 +1069,12 @@ SlashCmdList.DAGBOK = function(msg)
     elseif cmd == "bilder" and (rest == "auto" or rest == "extern" or rest == "manuell") then
         settings.screenshotMode = rest
         Print("skärmdumpar: " .. rest .. ".")
+    elseif cmd == "diag" then
+        local function yes(v) return v and "ja" or "nej" end
+        Print("stridsloggen registrerad: " .. yes(handlers.COMBAT_LOG_EVENT_UNFILTERED) .. ", har kommit fram: " .. yes(combatLogSeen))
+        Print("reserv: UNIT_COMBAT " .. yes(handlers.UNIT_COMBAT) .. ", XP-meddelanden " .. yes(handlers.CHAT_MSG_COMBAT_XP_GAIN))
+        local stats = ns.db.stats
+        Print(format("skada %d, healing %d, crits %d, fällda fiender %d", stats.damageDone, stats.healingDone, stats.crits, stats.npcKills))
     elseif cmd == "hjalp" then
         Print("/dagbok - öppna/stäng dagboken")
         Print("/dagbok minne <text> - spara ett eget minne med skärmdump")
@@ -1010,6 +1082,7 @@ SlashCmdList.DAGBOK = function(msg)
         Print("/dagbok kvalitet <N> - skärmdump för loot från kvalitet N, 3=blå 4=lila 5=orange (nu " .. settings.lootShotQuality .. ")")
         Print("/dagbok pvp <N> - skärmdump var N:e PvP-kill (nu " .. settings.pvpKillInterval .. ")")
         Print("/dagbok bilder auto|extern|manuell - vem tar skärmdumparna (nu " .. settings.screenshotMode .. ")")
+        Print("/dagbok diag - visa om stridsstatistiken räknas")
     else
         ns.ToggleUI()
     end
